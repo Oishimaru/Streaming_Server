@@ -87,7 +87,7 @@ INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
     VALUS ('default','GOOGLE TRANSLATE','default.mp3');
 
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
-    VALUS ('Never Gonna Give You Up','Rick Astley','Rick Rolling.mp3');
+    VALUS ('Never Gonna Give You Up','Rick Astley','Rick Rolling.m4a');
 
 CREATE USER 'adonis'@'localhost' IDENTIFIED BY 'password';
 

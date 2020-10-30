@@ -121,6 +121,10 @@ httpServer.listen(wsPort,  () =>
 
 const mqtt = require("mqtt");
 
+var fs = require('fs');
+
+const randomToken = require('random-token').create('abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
+
 const core = require('./modules/SQL.js');
 
 const { createInterface } = require('readline');
@@ -157,7 +161,68 @@ const outgoing = [
 var dataStream_R = [];
 var dataStream_S = [];
 
+var TOKEN = "";
+
 /*********************************FUNCTIONS***********************************/
+
+function getCredentials()
+{
+    let filename = "credentials.txt";
+    
+    let info;
+
+    fs.readFile(filename, 'utf8', (error, data) =>
+    {
+        if(error)
+        {
+            console.log(error);
+
+            let data = {"USER":"APP","PASS":"0R81TT45"};
+
+            fs.writeFile(filename,data, (error) =>
+            {
+                if(error)
+                {
+                    console.log(error);
+                }
+                else
+                {
+                    info = data;
+
+                    console.log("created new file.");           
+
+                }                  
+            });
+        }
+        else
+        {
+            info = data;
+
+            console.log(data);
+        }
+    });
+
+    return info;
+}
+
+function setCredentials(USER,PASS)
+{
+    let filename = "credentials.txt";
+
+    let data = {USER,PASS};
+
+    fs.writeFile(filename,data, (error) =>
+    {
+        if(error)
+        {
+            console.log(error);
+        }
+        else
+        {
+            console.log("New credentials set.");           
+        }                  
+    });
+}
 
 function newSubscription(device,id)
 {
@@ -259,65 +324,126 @@ client.on("message", (topic, message) =>
         {
             case "GET":
             {
-                let Q = SQL.SEL("*", data.TARGET, data.FIELD1);
-
-                if(Q[0] && !Q.STATUS)
+                if(TOKEN && data.TOKEN == TOKEN)
                 {
-                    for(let k = 0; k < Q.length(); k++)
-                        Q[k] = {"STATUS":"SUCCESS"};
-                }
+                    let Q = SQL.SEL("*", data.TARGET, data.FIELD1);
 
-                client.publish(outgoing[4],Q);
+                    if(Q[0] && !Q.STATUS)
+                    {
+                        for(let k = 0; k < Q.length(); k++)
+                            Q[k] = {"STATUS":"SUCCESS"};
+                    }
+
+                    client.publish(outgoing[4],Q);
+                }
+                else
+                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
 
                 break;
             }
 
             case "POST":
             {
-                let Q = SQL.INS(data.TARGET, data);
-
-                if(!Q.STATUS)
+                
+                if(TOKEN && data.TOKEN == TOKEN)
                 {
-                    Q = {"STATUS":"SUCCESS"};
+                    let Q = SQL.INS(data.TARGET, data);
 
-                    newSubscription("READER",data.FIELD2);
-
-                    newSubscription("SPEAKER",data.FIELD3);
+                    if(!Q.STATUS)
+                    {
+                        Q = {"STATUS":"SUCCESS"};
+    
+                        newSubscription("READER",data.FIELD2);
+    
+                        newSubscription("SPEAKER",data.FIELD3);
+                    }
+    
+                    client.publish(outgoing[4],Q);
                 }
-
-                client.publish(outgoing[4],Q);
-
+                else
+                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
+                
+                
                 break;
             }
 
             case "UPDATE":
             {
-                let Q = SQL.UPDT(data.TARGET, data);
-
-                if(!Q.STATUS)
+                if(TOKEN && data.TOKEN == TOKEN)
                 {
-                    Q = {"STATUS":"SUCCESS"};
+                    let Q = SQL.UPDT(data.TARGET, data);
+
+                    if(!Q.STATUS)
+                    {
+                        Q = {"STATUS":"SUCCESS"};
+                    }
+    
+                    client.publish(outgoing[4],Q);
                 }
+                else
+                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
 
-                client.publish(outgoing[4],Q);
-
+               
                 break;
             }
 
             case "DELETE":
             {
-                let Q = SQL.DEL(data.TARGET, data.FIELD1);
+                if(TOKEN && data.TOKEN == TOKEN)
+                {  
+                    let Q = SQL.DEL(data.TARGET, data.FIELD1);
 
-                if(!Q.STATUS)
-                {
-                    Q = {"STATUS":"SUCCESS"};
+                    if(!Q.STATUS)
+                    {
+                        Q = {"STATUS":"SUCCESS"};
+                    }
+
+                    client.publish(outgoing[4],Q);
                 }
+                else
+                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
 
-                client.publish(outgoing[4],Q);
 
                 break;
             }
+
+            case "CREDENTIALS":
+            {
+                
+                let credentials = getCredentials();
+                
+                if(data.NEW == "NO")
+                {
+                    if(credentials.USER == data.USER && credentials.PASS == data.PASS)
+                    {
+                        TOKEN = randomToken(16);
+
+                        client.publish(outgoing[3],{"STATUS":"SUCCESS",TOKEN});
+                    }
+                    else
+                    {
+                        client.publish(outgoing[3],{"STATUS":"INVALID"});
+                    }
+                }
+                else
+                {
+                    if(TOKEN && data.TOKEN == TOKEN)
+                    {
+                        setCredentials(data.USER,data.PASS);
+
+                        TOKEN = randomToken(16);
+
+                        client.publish(outgoing[3],{"STATUS":"SUCCESS",TOKEN});
+                    }
+                    else
+                    {
+                        client.publish(outgoing[3],{"STATUS":"LOGIN"});
+                    }
+                }
+                
+            }
         }
+
     }
     else if(ID[0] == "READER")
     {
@@ -391,7 +517,7 @@ client.on("message", (topic, message) =>
 
         switch(data.STATUS)
         {
-            case "playing":
+            case "PLAYING":
             {
                 clearTimeout(play[index]);
             }
