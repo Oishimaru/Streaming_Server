@@ -23,6 +23,8 @@ const core = require('./modules/media-core.js');
 
 var port = [3400,3401,3402,3403,3404,3405,3406,3407,3408,3409,3410];
 
+const uport = 8081;
+
 var app  = [];
 
 var server = [];
@@ -71,7 +73,9 @@ try
 }
 catch(error)
 {
-    console.log("An error has ocurred.");
+    console.log("An error has ocurred: ");
+
+    console.log(error);
 }
 
 
@@ -488,6 +492,7 @@ client.on("message", (topic, message) =>
             else
                 URL = baseURL + "/0/default.mp3";
 
+            URL = encodeURI(URL);
 
             client.publish(outgoing[2] + SPEAKER_ID,{ACTION,URL});
 

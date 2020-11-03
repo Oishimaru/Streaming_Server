@@ -84,10 +84,10 @@ INSERT INTO TCP_PORTS (ID,PORT,PORT_STATUS)
     VALUES (10,3410,'UNASSIGNED');  
 
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
-    VALUS ('default','GOOGLE TRANSLATE','default.mp3');
+    VALUES ('default','GOOGLE TRANSLATE','default.mp3');
 
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
-    VALUS ('Never Gonna Give You Up','Rick Astley','Rick Rolling.m4a');
+    VALUES ('Never Gonna Give You Up','Rick Astley','Rick Rolling.m4a');
 
 CREATE USER 'adonis'@'localhost' IDENTIFIED BY 'password';
 
