@@ -379,8 +379,17 @@ client.on("message", (topic, message) =>
                     if(Q[0] && !Q.STATUS)
                     {
                         for(let k = 0; k < Q.length(); k++)
-                            Q[k] = {"STATUS":"SUCCESS"};
+                        {
+                            Q[k].STATUS = "SUCCESS";
+
+                            Q[k] = JSON.stringify(Q);
+                        }
+                            
                     }
+                    else
+                        Q = JSON.stringify(Q);
+
+                    
 
                     client.publish(outgoing[4],Q);
                 }
@@ -405,7 +414,9 @@ client.on("message", (topic, message) =>
     
                         newSubscription("SPEAKER",data.FIELD3);
                     }
-    
+                    
+                    Q = JSON.stringify(Q);
+
                     client.publish(outgoing[4],Q);
                 }
                 else
@@ -425,6 +436,8 @@ client.on("message", (topic, message) =>
                     {
                         Q = {"STATUS":"SUCCESS"};
                     }
+
+                    Q = JSON.stringify(Q);
     
                     client.publish(outgoing[4],Q);
                 }
@@ -445,6 +458,8 @@ client.on("message", (topic, message) =>
                     {
                         Q = {"STATUS":"SUCCESS"};
                     }
+
+                    Q = JSON.stringify(Q);
 
                     client.publish(outgoing[4],Q);
                 }
