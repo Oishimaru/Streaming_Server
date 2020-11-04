@@ -131,7 +131,7 @@ const util = require('util');
 
 const randomToken = require('random-token').create('abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
 
-const SQL = require('./Modules/SQL.JS');
+const SQL = require('./Modules/SQL.js');
 
 const { createInterface } = require('readline');
 const { setgroups } = require('process');
