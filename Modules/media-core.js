@@ -1,7 +1,7 @@
 const fs   = require('fs');
 
 //Ruta para los archivos.
-const dir  = ["./files/default","./files/music"];
+const dir  = ["./files/default/","./files/music/"];
 
 //Función para listar los archivos del directorio audio.
 module.exports.listFiles = (req,res)=>{

@@ -17,7 +17,7 @@ const throttle = require('express-throttle-bandwidth');
 
 const { createHttpTerminator } = require('http-terminator')
 
-const core = require('./modules/media-core.js');
+const core = require('./Modules/media-core.js');
 
 /*************************VARIABLES AND INSTANCES*****************************/
 
@@ -125,13 +125,16 @@ httpServer.listen(wsPort,  () =>
 
 const mqtt = require("mqtt");
 
-var fs = require('fs');
+const fs = require('fs');
+
+const util = require('util');
 
 const randomToken = require('random-token').create('abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
 
-const core = require('./modules/SQL.js');
+const SQL = require('./Modules/SQL.JS');
 
 const { createInterface } = require('readline');
+const { setgroups } = require('process');
 
 
 /*************************VARIABLES AND INSTANCES*****************************/
@@ -169,63 +172,104 @@ var TOKEN = "";
 
 /*********************************FUNCTIONS***********************************/
 
-function getCredentials()
+async function  getCredentials()
 {
+    let readFile = util.promisify(fs.readFile);
+
+    let writeFile = util.promisify(fs.writeFile);
+
+    let exists = util.promisify(fs.access);
+    
     let filename = "credentials.txt";
     
     let info;
 
-    fs.readFile(filename, 'utf8', (error, data) =>
+    let e;
+
+    try
     {
-        if(error)
+        await exists(filename, fs.constants.F_OK); 
+
+        e = true;
+        
+    }
+    catch(error)
+    {
+        console.log(error);
+
+        e = false;
+    }
+    
+    
+    console.log("File Exists: " + e);
+
+    if(e)
+        info = (await readFile(filename)).toString();
+    else
+    {
+        console.log("Attemting to create " + filename + " with default credentials.");
+
+        
+        let data = {"USER":"APP","PASS":"0R81TT45"};
+
+        data = JSON.stringify(data);
+
+        try
+        {
+            await writeFile(filename,data);
+
+            console.log(filename + " succesfully created.")
+        }
+        catch(error)
         {
             console.log(error);
-
-            let data = {"USER":"APP","PASS":"0R81TT45"};
-
-            fs.writeFile(filename,data, (error) =>
-            {
-                if(error)
-                {
-                    console.log(error);
-                }
-                else
-                {
-                    info = data;
-
-                    console.log("created new file.");           
-
-                }                  
-            });
         }
-        else
-        {
-            info = data;
 
-            console.log(data);
-        }
-    });
+        info = data;
+    }
+    
+    let output = JSON.parse(info.toString());
+    process.stdout.write("Stored Credentials: ");
 
-    return info;
+    console.log(output);
+
+    return output;   
 }
 
-function setCredentials(USER,PASS)
+async function setCredentials(USER,PASS)
 {
+    let writeFile = util.promisify(fs.writeFile);
+    
     let filename = "credentials.txt";
+
+    let output;
 
     let data = {USER,PASS};
 
-    fs.writeFile(filename,data, (error) =>
+    output = data;
+
+    data = JSON.stringify(data);
+
+    try
     {
-        if(error)
-        {
-            console.log(error);
-        }
-        else
-        {
-            console.log("New credentials set.");           
-        }                  
-    });
+        await writeFile(filename,data);
+
+        process.stdout.write("New Credentials Set: ");
+        
+        console.log(output);
+
+        output = {"STATUS":"SUCCESS"};
+    }
+    catch(error)
+    {
+        console.log(error);
+
+        console.log('Unable to set new credentials.')
+        
+        output = {"STATUS":"FAILURE"};
+    }
+   
+    return output;
 }
 
 function newSubscription(device,id)
@@ -278,7 +322,7 @@ client.on("message", (topic, message) =>
 
     let ID = topic.split('/');
 
-    let data = message;
+    let data = JSON.parse(message);
     
     if(ID[1] == "INFO")
     {
@@ -414,37 +458,69 @@ client.on("message", (topic, message) =>
             case "CREDENTIALS":
             {
                 
-                let credentials = getCredentials();
-                
-                if(data.NEW == "NO")
+                setImmediate( async () =>
                 {
-                    if(credentials.USER == data.USER && credentials.PASS == data.PASS)
-                    {
-                        TOKEN = randomToken(16);
+                    let credentials = await getCredentials();
 
-                        client.publish(outgoing[3],{"STATUS":"SUCCESS",TOKEN});
+                    console.log(credentials);
+                
+                    if(data.NEW == "NO")
+                    {
+                        if(credentials.USER == data.USER && credentials.PASS == data.PASS)
+                        {
+                            TOKEN = randomToken(16);
+
+                            var response = {"STATUS":"SUCCESS",TOKEN};
+
+                            response = JSON.stringify(response);
+
+                            console.log(response);
+
+                            client.publish(outgoing[3],response);
+                        }
+                        else
+                        {
+                            var response = {"STATUS":"INVALID"};
+
+                            response = JSON.stringify(response);
+
+                            console.log(response);
+
+                            client.publish(outgoing[3],response);
+                        }
                     }
                     else
                     {
-                        client.publish(outgoing[3],{"STATUS":"INVALID"});
-                    }
-                }
-                else
-                {
-                    if(TOKEN && data.TOKEN == TOKEN)
-                    {
-                        setCredentials(data.USER,data.PASS);
+                        if(TOKEN && data.TOKEN == TOKEN)
+                        {
+                            let response = await setCredentials(data.USER,data.PASS);                            
+                            
+                            if(response.STATUS == "SUCCESS")
+                            {
+                                TOKEN = randomToken(16);
 
-                        TOKEN = randomToken(16);
+                                response.TOKEN = TOKEN;
+                            }
 
-                        client.publish(outgoing[3],{"STATUS":"SUCCESS",TOKEN});
-                    }
-                    else
-                    {
-                        client.publish(outgoing[3],{"STATUS":"LOGIN"});
-                    }
-                }
-                
+                            response = JSON.stringify(response);
+
+                            console.log(response);
+
+                            client.publish(outgoing[3],response);
+                        }
+                        else
+                        {
+                            var response = {"STATUS":"LOGIN"};
+
+                            console.log(response);
+
+                            response = JSON.stringify(response);
+
+                            client.publish(outgoing[3],response);
+                        }
+                    }   
+                });
+
             }
         }
 
