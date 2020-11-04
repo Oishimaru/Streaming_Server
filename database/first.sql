@@ -91,6 +91,6 @@ INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
 
 CREATE USER 'adonis'@'localhost' IDENTIFIED BY 'password';
 
-GRANT ALL PRIVILEGES ON database_name.* TO 'adonis'@'localhost';
+GRANT ALL PRIVILEGES ON STREAMING_SERVER.* TO 'adonis'@'localhost';
 
 FLUSH PRIVILEGES;

@@ -372,6 +372,9 @@ client.on("message", (topic, message) =>
         {
             case "GET":
             {
+                console.log(TOKEN);
+                console.log(data.TOKEN);
+
                 if(TOKEN && data.TOKEN == TOKEN)
                 {
                     let Q = SQL.SEL("*", data.TARGET, data.FIELD1);
@@ -382,7 +385,7 @@ client.on("message", (topic, message) =>
                         {
                             Q[k].STATUS = "SUCCESS";
 
-                            Q[k] = JSON.stringify(Q);
+                            Q[k] = JSON.stringify(Q[k]);
                         }
                             
                     }
@@ -394,7 +397,7 @@ client.on("message", (topic, message) =>
                     client.publish(outgoing[4],Q);
                 }
                 else
-                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
+                    client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
 
                 break;
             }

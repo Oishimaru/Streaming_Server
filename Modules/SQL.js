@@ -8,7 +8,7 @@ function DBconnection()
   host: "localhost",
   user: "adonis",
   password: "password",
-  database: "streaming_server"
+  database: "STREAMING_SERVER"
   });
 
   return con;
@@ -16,7 +16,7 @@ function DBconnection()
 
 
 
-function portAvailable(DB)
+async function portAvailable(DB)
 {
   var r = "";
 
@@ -27,28 +27,33 @@ function portAvailable(DB)
 
   let Q = "SELECT * FROM TCP_PORTS WHERE PORT_STATUS = 'UNASSIGNED' TOP 1;"
 
-  DB.query(Q, (error, result, fields) =>
+  try
   {
-      if(error)
-      {
-        console.log(error);
-
-        r = {"STATUS":error};
-
-        return r;
-      }
-
-      var r = JSON.parse(JSON.stringify(result));
+    r = await DB.query(Q);
+    
+    var r = JSON.parse(JSON.stringify(result));
       
-      console.log(r);
+    console.log(r);
 
-      r = r.ID;
-  });
+    r = r.ID;
 
-  return r;
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
+      console.log(error);
+
+      r = {"STATUS":error};
+
+      return r;
+    }
+  }
+
 }
 
-function portAssign(port,DB)
+async function portAssign(port,DB)
 {
   var r = "";
   
@@ -66,26 +71,31 @@ function portAssign(port,DB)
 
   let Q = q1 + q2 + q3;
 
-  DB.query(Q, (error, result, fields) =>
+  try
   {
-      if(error)
-      {
-        console.log(error);
+    r = await DB.query(Q);
 
-        r = {"STATUS":error};
-
-        return r;
-      }
-
-      var r = JSON.parse(JSON.stringify(result));
+    var r = JSON.parse(JSON.stringify(result));
       
-      console.log(r);
-  });
+    console.log(r);
 
-  return r;
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
+      console.log(error);
+
+      r = {"STATUS":error};
+
+      return r;
+    }
+  }
+  
 }
 
-function portUnassign(port,DB)
+async function portUnassign(port,DB)
 {
   var r = "";
   
@@ -103,26 +113,31 @@ function portUnassign(port,DB)
 
   let Q = q1 + q2 + q3;
 
-  DB.query(Q, (error, result, fields) =>
+  try
   {
-      if(error)
-      {
-        console.log(error);
+    r = await DB.query(Q);
 
-        r = {"STATUS":error};
-
-        return r;
-      }
-
-      var r = JSON.parse(JSON.stringify(result));
+    var r = JSON.parse(JSON.stringify(result));
       
-      console.log(r);
-  });
+    console.log(r);
+    
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
+      console.log(error);
 
-  return r;
+      r = {"STATUS":error};
+
+      return r;
+    }
+  }
+
 }
 
-module.exports.SEL = function SEL(S,TAB,WHERE)
+module.exports.SEL = async function SEL(S,TAB,WHERE)
 {  
   var DB = DBconnection();
   
@@ -155,31 +170,35 @@ module.exports.SEL = function SEL(S,TAB,WHERE)
       Q += "WHERE ID = " + WHERE.toSring();
   }
   
-  DB.query("SELECT " + S +  " FROM " + Q + ";", (error, result, fields) =>
+  try
   {
-      if(error)
-      {
-        DB.end();
+    r = await DB.query("SELECT " + S +  " FROM " + Q + ";");
 
-        console.log(error);
+    DB.end();
 
-        r = {"STATUS":error};
+    r = JSON.parse(JSON.stringify(result));
+      
+    console.log(r);
 
-        return r;
-      }
-
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
       DB.end();
 
-      r = JSON.parse(JSON.stringify(result));
-      
-      console.log(r);
-  });
+      console.log(error);
 
-  return r;
+      r = {"STATUS":error};
+
+      return r;
+    }
+  }
 }
 
 
-module.exports.INS = function INS(TAB,COL)
+module.exports.INS = async function INS(TAB,COL)
 {
   var DB = DBconnection();
 
@@ -252,44 +271,47 @@ module.exports.INS = function INS(TAB,COL)
 
   let Q =  q1 + q2 + q3;
   
-  DB.query(Q, (error, result, fields) =>
+  try
   {
-      if(error)
+    r = await DB.query(Q);
+
+    if(TAB == "ROOMS")
+    {
+      r = portAssign(port,DB);
+
+      if(r.STATUS)
       {
         DB.end();
 
-        console.log(error);
-
-        r = {"STATUS":error};
-
         return r;
       }
+    }
 
-      if(TAB == "ROOMS")
-      {
-        r = portAssign(port,DB);
+    DB.end();
 
-        if(r.STATUS)
-        {
-          DB.end();
+    r = JSON.parse(JSON.stringify(result));
+      
+    console.log(r);
 
-          return r;
-
-        }
-      }
-     
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
       DB.end();
 
-      r = JSON.parse(JSON.stringify(result));
-      
-      console.log(r);
-  });
+      console.log(error);
 
-  return r;
+      r = {"STATUS":error};
+
+      return r;
+    }
+  }
 }
 
 
-module.exports.UPDT = function UPDT(TAB,COL)
+module.exports.UPDT = async function UPDT(TAB,COL)
 {
   var DB = DBconnection();
 
@@ -344,30 +366,34 @@ module.exports.UPDT = function UPDT(TAB,COL)
 
   let Q =  q1 + q2 + q3;
   
-  DB.query(Q, (error, result, fields) =>
+  try
   {
-      if(error)
-      {
-        DB.end();
+    r = await DB.query(Q);
+    
+    DB.end();
 
-        console.log(error);
-
-        r = {"STATUS":error};
-
-        return r;
-      }
-     
+    r = JSON.parse(JSON.stringify(result));
+    
+    console.log(r);
+    
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
       DB.end();
 
-      r = JSON.parse(JSON.stringify(result));
-      
-      console.log(r);
-  });
+      console.log(error);
 
-  return r;
+      r = {"STATUS":error};
+
+      return r;
+    } 
+  }
 }
 
-module.exports.DEL = function DEL(TAB,WHERE)
+module.exports.DEL = async function DEL(TAB,WHERE)
 { 
   var query;
 
@@ -397,31 +423,35 @@ module.exports.DEL = function DEL(TAB,WHERE)
 
   let Q = TAB + " WHERE ID = " + WHERE.toSring();
   
-  DB.query("DELETE FROM " + Q + ";", (error, result, fields) =>
+  try
   {
-      if(error)
-      {
-        DB.end();
+    r = DB.query("DELETE FROM " + Q + ";");
 
-        console.log(error);
+    if(TAB == "ROOMS")
+    {
+      if(query[0] && !query.STATUS)
+        portUnassign(query[0].PORT_ID,DB);
+    }
 
-        r = {"STATUS":error};
+    DB.end();
 
-        return r;
-      }
+    r = JSON.parse(JSON.stringify(result));
+      
+    console.log(r);
 
-      if(TAB == "ROOMS")
-      {
-        if(query[0] && !query.STATUS)
-          portUnassign(query[0].PORT_ID,DB);
-      }
-
+    return r;
+  }
+  catch(error)
+  {
+    if(error)
+    {
       DB.end();
 
-      r = JSON.parse(JSON.stringify(result));
-      
-      console.log(r);
-  });
+      console.log(error);
 
-  return r;
+      r = {"STATUS":error};
+
+      return r;
+    }    
+  }
 }
