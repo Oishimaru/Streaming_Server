@@ -172,6 +172,16 @@ var TOKEN = "";
 
 /*********************************FUNCTIONS***********************************/
 
+function length(obj) 
+{
+    let count = 0;
+    
+    for (let p in obj) {
+      obj.hasOwnProperty(p) && count++;
+    }
+    return count; 
+}
+
 async function  getCredentials()
 {
     let readFile = util.promisify(fs.readFile);
@@ -358,9 +368,9 @@ client.on("message", (topic, message) =>
                 dataStream_R = [];
                 dataStream_S = [];
                 
-                client.publish(outgoing[0],{"REQUEST":"INFO"});
+                client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
 
-                setTimeout(client.publish(outgoing[1], dataStream_R.concat(dataStream_S)),5000);
+                setTimeout(client.publish(outgoing[1], JSON.stringify(dataStream_R.concat(dataStream_S))),5000);
                 
                 break;
             }
@@ -372,110 +382,109 @@ client.on("message", (topic, message) =>
         {
             case "GET":
             {
-                console.log(TOKEN);
-                console.log(data.TOKEN);
-
-                if(TOKEN && data.TOKEN == TOKEN)
+                setImmediate( async () =>
                 {
-                    let Q = SQL.SEL("*", data.TARGET, data.FIELD1);
+                    console.log(TOKEN);
+                    console.log(data.TOKEN);
 
-                    if(Q[0] && !Q.STATUS)
+                    if(TOKEN && data.TOKEN == TOKEN)
                     {
-                        for(let k = 0; k < Q.length(); k++)
-                        {
-                            Q[k].STATUS = "SUCCESS";
+                        let Q = await SQL.SEL("*", data.TARGET, data.FIELD1);
 
-                            Q[k] = JSON.stringify(Q[k]);
+                        if(Q[0] && !Q.STATUS)
+                        {
+                            for(let k = 0; k < length(Q); k++)   
+                                Q[k].STATUS = "SUCCESS";          
                         }
-                            
+                    
+                        Q = JSON.stringify(Q);  
+0
+                        client.publish(outgoing[4],Q);
                     }
                     else
-                        Q = JSON.stringify(Q);
-
-                    
-
-                    client.publish(outgoing[4],Q);
-                }
-                else
-                    client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
-
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                });
+                
                 break;
             }
 
             case "POST":
             {
-                
-                if(TOKEN && data.TOKEN == TOKEN)
+                setImmediate( async ()=>
                 {
-                    let Q = SQL.INS(data.TARGET, data);
-
-                    if(!Q.STATUS)
+                    if(TOKEN && data.TOKEN == TOKEN)
                     {
-                        Q = {"STATUS":"SUCCESS"};
+                        let Q = await SQL.INS(data.TARGET, data);
     
-                        newSubscription("READER",data.FIELD2);
+                        if(!Q.STATUS)
+                        {
+                            Q = {"STATUS":"SUCCESS"};
+                            
+                            if(data.TARGET == "ROOMS")
+                            {
+                                newSubscription("READER",data.FIELD2);
+        
+                                newSubscription("SPEAKER",data.FIELD3);
+                            }     
+                        }
+                        
+                        Q = JSON.stringify(Q);
     
-                        newSubscription("SPEAKER",data.FIELD3);
+                        client.publish(outgoing[4],Q);
                     }
-                    
-                    Q = JSON.stringify(Q);
-
-                    client.publish(outgoing[4],Q);
-                }
-                else
-                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
-                
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                });
                 
                 break;
             }
 
             case "UPDATE":
             {
-                if(TOKEN && data.TOKEN == TOKEN)
+                setImmediate( async () =>
                 {
-                    let Q = SQL.UPDT(data.TARGET, data);
-
-                    if(!Q.STATUS)
+                    if(TOKEN && data.TOKEN == TOKEN)
                     {
-                        Q = {"STATUS":"SUCCESS"};
-                    }
+                        let Q = await SQL.UPDT(data.TARGET, data);
 
-                    Q = JSON.stringify(Q);
+                        if(!Q.STATUS)
+                            Q = {"STATUS":"SUCCESS"};
+                        
+                        Q = JSON.stringify(Q);
     
-                    client.publish(outgoing[4],Q);
-                }
-                else
-                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
-
-               
+                        client.publish(outgoing[4],Q);
+                    }
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                });
+                
                 break;
             }
 
             case "DELETE":
             {
-                if(TOKEN && data.TOKEN == TOKEN)
-                {  
-                    let Q = SQL.DEL(data.TARGET, data.FIELD1);
+                setImmediate( async () =>
+                {
+                    if(TOKEN && data.TOKEN == TOKEN)
+                    {  
+                        let Q = await SQL.DEL(data.TARGET, data.FIELD1);
 
-                    if(!Q.STATUS)
-                    {
-                        Q = {"STATUS":"SUCCESS"};
+                        if(!Q.STATUS)
+                            Q = {"STATUS":"SUCCESS"};
+                        
+                        Q = JSON.stringify(Q);
+
+                        client.publish(outgoing[4],Q);
                     }
-
-                    Q = JSON.stringify(Q);
-
-                    client.publish(outgoing[4],Q);
-                }
-                else
-                    client.publish(outgoing[4],{"STATUS":"LOGIN"});
-
-
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                });
+                
                 break;
             }
 
             case "CREDENTIALS":
             {
-                
                 setImmediate( async () =>
                 {
                     let credentials = await getCredentials();
@@ -507,7 +516,7 @@ client.on("message", (topic, message) =>
                             client.publish(outgoing[3],response);
                         }
                     }
-                    else
+                    else if(data.NEW == "YES")
                     {
                         if(TOKEN && data.TOKEN == TOKEN)
                         {
@@ -588,9 +597,9 @@ client.on("message", (topic, message) =>
 
             URL = encodeURI(URL);
 
-            client.publish(outgoing[2] + SPEAKER_ID,{ACTION,URL});
+            client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,URL}));
 
-            play[index] = setTimeout(client.publish(outgoing[2] + SPEAKER_ID,{ACTION,URL}),2000);
+            play[index] = setTimeout(client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,URL})),2000);
         }
         else if(ACTION == "STOP")
         {

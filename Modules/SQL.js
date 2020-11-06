@@ -1,6 +1,14 @@
-const { notStrictEqual } = require('assert');
-const mysql = require('mysql');
+/*******************************************************************************
+********************************************************************************
+*                                 SQL QUERIES                                  *
+********************************************************************************
+*******************************************************************************/
 
+/**********************************MODULES*************************************/
+
+const mysql = require('mysql2');
+
+/*********************************FUNCTIONS***********************************/
 
 function DBconnection()
 {
@@ -14,14 +22,14 @@ function DBconnection()
   return con;
 }
 
-
-
-async function portAvailable(DB)
+async function portAvailable(DB,s)
 {
-  var r = "";
+  let r = s;
 
   if(r.STATUS)
-    return r
+    return r;
+
+  r = null;
 
   console.log("SELECT");
 
@@ -29,119 +37,109 @@ async function portAvailable(DB)
 
   try
   {
-    r = await DB.query(Q);
+    let result = await DB.promise().query(Q);
     
-    var r = JSON.parse(JSON.stringify(result));
+    r = JSON.parse(JSON.stringify(result));
       
     console.log(r);
 
     r = r.ID;
-
-    return r;
   }
   catch(error)
   {
-    if(error)
-    {
       console.log(error);
 
-      r = {"STATUS":error};
-
-      return r;
-    }
+      r.STATUS = error.toString();
   }
-
+  
+  return r;
 }
 
-async function portAssign(port,DB)
+async function portAssign(port,DB,s)
 {
-  var r = "";
+  let r = s;
   
   if (port.STATUS)
     return port;
 
   if(r.STATUS)
-    return r
+    return r;
+  
+  r = null;
 
   console.log("UPDATE");
 
   let q1 = "UPDATE TCP_PORTS "
   let q2 = "SET PORT_STATUS = 'ASSIGNED' "
-  let q3 = "WHERE ID = " + port.toSring() + ";";
+  let q3 = "WHERE ID = " + port.toString() + ";";
 
   let Q = q1 + q2 + q3;
 
   try
   {
-    r = await DB.query(Q);
+    let result = await DB.promise().query(Q);
 
-    var r = JSON.parse(JSON.stringify(result));
-      
+    r = JSON.parse(JSON.stringify(result))
+    
     console.log(r);
-
-    return r;
   }
   catch(error)
   {
-    if(error)
-    {
       console.log(error);
 
-      r = {"STATUS":error};
-
-      return r;
-    }
+      r.STATUS = error.toString();
   }
-  
+
+  return r;
 }
 
-async function portUnassign(port,DB)
+async function portUnassign(port,DB,s)
 {
-  var r = "";
+  let r = s;
   
   if (port.STATUS)
     return port;
 
   if(r.STATUS)
-    return r
+    return r;
+
+  r = null;
 
   console.log("UPDATE");
 
   let q1 = "UPDATE TCP_PORTS "
   let q2 = "SET PORT_STATUS = 'UNASSIGNED' "
-  let q3 = "WHERE ID = " + port.toSring() + ";";
+  let q3 = "WHERE ID = " + port.toString() + ";";
 
   let Q = q1 + q2 + q3;
 
   try
   {
-    r = await DB.query(Q);
+    let result = await DB.promise().query(Q);
 
-    var r = JSON.parse(JSON.stringify(result));
+    r = JSON.parse(JSON.stringify(result));
       
     console.log(r);
-    
-    return r;
   }
   catch(error)
   {
-    if(error)
-    {
       console.log(error);
 
-      r = {"STATUS":error};
-
-      return r;
-    }
+      r.STATUS = error.toString();
   }
 
+  return r;
 }
+
+/**********************************EXPORTS************************************/
+
+/*SELECT QUERY*/
 
 module.exports.SEL = async function SEL(S,TAB,WHERE)
 {  
-  var DB = DBconnection();
+  let DB = DBconnection();
   
-  var r = "";
+  let r = null;
 
   DB.connect( (error) =>
   {
@@ -151,7 +149,7 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
       
       console.log(error);
 
-      r = {"STATUS":error};
+      r.STATUS = error;
     }  
   });
 
@@ -167,42 +165,38 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
     if(TAB == "TAGS")
       Q += "WHERE TAG = '" + WHERE + "'";
     else
-      Q += "WHERE ID = " + WHERE.toSring();
+      Q += "WHERE ID = " + WHERE.toString();
   }
   
   try
   {
-    r = await DB.query("SELECT " + S +  " FROM " + Q + ";");
-
-    DB.end();
+    let [result,fields] = await DB.promise().query("SELECT " + S +  " FROM " + Q + ";");
 
     r = JSON.parse(JSON.stringify(result));
-      
-    console.log(r);
 
-    return r;
+    console.log(r);
   }
   catch(error)
   {
-    if(error)
-    {
-      DB.end();
+    console.log(error);  
+    
+    r = null;
 
-      console.log(error);
-
-      r = {"STATUS":error};
-
-      return r;
-    }
+    r.STATUS = error;
   }
+
+  DB.end();
+
+  return r;
 }
 
+/*INSERT QUERY*/
 
 module.exports.INS = async function INS(TAB,COL)
 {
-  var DB = DBconnection();
+  let DB = DBconnection();
 
-  var r = "";
+  let r = null;
     
   DB.connect( (error) =>
   {
@@ -212,7 +206,7 @@ module.exports.INS = async function INS(TAB,COL)
       
       console.log(error);
 
-      r = {"STATUS":error};
+      r.STATUS = error;
     }  
   });
 
@@ -232,11 +226,11 @@ module.exports.INS = async function INS(TAB,COL)
 
   switch(TAB)
   {
-    case "ROMMS":
+    case "ROOMS":
     {
       q2  = " (ROOM_NAME,READER_ID,SPEAKER_ID,PORT_ID) ";
 
-      port = portAvailable(DB);   
+      port = portAvailable(DB,r);   
       
       if(port.STATUS)
       {
@@ -273,11 +267,11 @@ module.exports.INS = async function INS(TAB,COL)
   
   try
   {
-    r = await DB.query(Q);
+    let result = await DB.promise().query(Q);
 
     if(TAB == "ROOMS")
     {
-      r = portAssign(port,DB);
+      r = portAssign(port,DB,r);
 
       if(r.STATUS)
       {
@@ -287,35 +281,29 @@ module.exports.INS = async function INS(TAB,COL)
       }
     }
 
-    DB.end();
-
     r = JSON.parse(JSON.stringify(result));
       
     console.log(r);
-
-    return r;
   }
   catch(error)
   {
-    if(error)
-    {
-      DB.end();
-
       console.log(error);
 
-      r = {"STATUS":error};
-
-      return r;
-    }
+      r.STATUS = error;
   }
+
+  DB.end();
+
+  return r;
 }
 
+/*UPDATE QUERY*/
 
 module.exports.UPDT = async function UPDT(TAB,COL)
 {
-  var DB = DBconnection();
+  let DB = DBconnection();
 
-  var r = "";
+  let r = null;
     
   DB.connect( (error) =>
   {
@@ -325,7 +313,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       
       console.log(error);
 
-      r = {"STATUS":error};
+      r.STATUS = error;
     }  
   });
 
@@ -340,7 +328,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
   switch(TAB)
   {
-    case "ROMMS":
+    case "ROOMS":
     {
       q2  = " ROOM_NAME = '"+ COL.FIELD2 +"', READER_ID = '"+ COL.FIELD3 +"', SPEAKER_ID = '" + COL.FIELD4 + "' ";
       
@@ -368,30 +356,25 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   
   try
   {
-    r = await DB.query(Q);
-    
-    DB.end();
+    let result = await DB.promise().query(Q);
 
     r = JSON.parse(JSON.stringify(result));
     
     console.log(r);
-    
-    return r;
   }
   catch(error)
   {
-    if(error)
-    {
-      DB.end();
-
       console.log(error);
 
-      r = {"STATUS":error};
-
-      return r;
-    } 
+      r.STATUS = error;
   }
+
+  DB.end();
+
+  return r;
 }
+
+/*DELETE QUERY*/
 
 module.exports.DEL = async function DEL(TAB,WHERE)
 { 
@@ -421,37 +404,30 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   
   console.log("DELETE");
 
-  let Q = TAB + " WHERE ID = " + WHERE.toSring();
+  let Q = TAB + " WHERE ID = " + WHERE.toString();
   
   try
   {
-    r = DB.query("DELETE FROM " + Q + ";");
+    let result = DB.query("DELETE FROM " + Q + ";");
 
     if(TAB == "ROOMS")
     {
       if(query[0] && !query.STATUS)
-        portUnassign(query[0].PORT_ID,DB);
+        portUnassign(query[0].PORT_ID,DB,r);
     }
-
-    DB.end();
 
     r = JSON.parse(JSON.stringify(result));
       
     console.log(r);
-
-    return r;
   }
   catch(error)
-  {
-    if(error)
-    {
-      DB.end();
+  { 
+    console.log(error);
 
-      console.log(error);
-
-      r = {"STATUS":error};
-
-      return r;
-    }    
+    r = {"STATUS":error};
   }
+
+  DB.end();
+
+  return r;
 }
