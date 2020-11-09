@@ -554,7 +554,11 @@ client.on("message", (topic, message) =>
     }
     else if(ID[0] == "READER")
     {
-        let baseURL = "http://sdrorbittas.sytes.net:";
+        let HOST = "sdrorbittas.sytes.net";
+
+        let PORT;
+
+        let PATH = "/audio";
 
         let READER_ID =  ID[1];
 
@@ -566,8 +570,6 @@ client.on("message", (topic, message) =>
 
         let ACTION = data.ACTION;
 
-        let URL;
-
         if(ACTION ==  "START")
         {
             let TAG = data.TAG;
@@ -578,8 +580,8 @@ client.on("message", (topic, message) =>
     
             let file = "";
    
-            baseURL += port[index].toString() + "/audio";
-    
+            PORT = port[index];
+            
             if(Q1[0] && !Q1.STATUS)
             {
                 let SONG_ID = Q1[0].SONG_ID;
@@ -591,15 +593,15 @@ client.on("message", (topic, message) =>
                 file = Q2[0].FL_NAME;
 
             if(file)
-                URL = baseURL + "/1/" + file;
+                PATH += "/1/" + file;
             else
-                URL = baseURL + "/0/default.mp3";
+                PATH += "/0/default.mp3";
 
-            URL = encodeURI(URL);
+            PATH = encodeURI(PATH);
 
-            client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,URL}));
+            client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
 
-            play[index] = setTimeout(client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,URL})),2000);
+            play[index] = setTimeout(client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH})),2000);
         }
         else if(ACTION == "STOP")
         {

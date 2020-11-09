@@ -139,7 +139,7 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
 {  
   let DB = DBconnection();
   
-  let r = null;
+  let r = "";
 
   DB.connect( (error) =>
   {
@@ -196,7 +196,7 @@ module.exports.INS = async function INS(TAB,COL)
 {
   let DB = DBconnection();
 
-  let r = null;
+  let r = "";
     
   DB.connect( (error) =>
   {
@@ -261,10 +261,29 @@ module.exports.INS = async function INS(TAB,COL)
 
       break;
     }
+
+    default:
+    {
+      q1 = "INSERT INTO TEST";
+
+      q2 = " (ID,ANIMAL,COLOR) ";
+
+      let F2 = "'" + COL.FIELD2;
+      F2 += "'";
+
+      let F3 = "'" + COL.FIELD3;
+      F3 += "'";
+
+      q3 = "VALUES (" + COL.FIELD1 + "," + F2 + "," + F3 + ";";
+
+      break;
+    }
   }
 
   let Q =  q1 + q2 + q3;
   
+  console.log(Q);
+
   try
   {
     let result = await DB.promise().query(Q);
@@ -290,6 +309,8 @@ module.exports.INS = async function INS(TAB,COL)
       console.log(error);
 
       r.STATUS = error;
+
+      console.log(r);
   }
 
   DB.end();
@@ -303,7 +324,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 {
   let DB = DBconnection();
 
-  let r = null;
+  let r = "";
     
   DB.connect( (error) =>
   {
@@ -424,7 +445,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   { 
     console.log(error);
 
-    r = {"STATUS":error};
+    r.STATUS = error;
   }
 
   DB.end();
