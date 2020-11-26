@@ -165,6 +165,8 @@ const outgoing = [
                     "SERVER/RESPONSE"
                  ];
 
+var info = false;
+
 var dataStream_R = [];
 var dataStream_S = [];
 
@@ -340,19 +342,26 @@ client.on("message", (topic, message) =>
         {
             case "READER":
             {
-                data.TYPE = "READER";
+                if(info)
+                {
+                    data.TYPE = "READER";
 
-                dataStream_R.push(data);
+                    dataStream_R.push(data);
+            
+                }
 
                 break;
             }
 
             case "SPEAKER":
             {
-                data.TYPE = "SPEAKER";
+                if(info)
+                {
+                    data.TYPE = "SPEAKER";
 
-                dataStream_S.push(data);
-
+                    dataStream_S.push(data);
+                }
+              
                 break;
             }
 
@@ -365,12 +374,18 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
+                info = true;
+
                 dataStream_R = [];
                 dataStream_S = [];
                 
                 client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
 
-                setTimeout(client.publish(outgoing[1], JSON.stringify(dataStream_R.concat(dataStream_S))),5000);
+                setTimeout(() =>
+                {
+                    info = false;
+                    client.publish(outgoing[1], JSON.stringify(dataStream_R.concat(dataStream_S)))
+                },5000);
                 
                 break;
             }

@@ -24,9 +24,10 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan('dev'));
 
 //start app 
-const port = 8080;
+const port = 8081;
 
 const { networkInterfaces } = require('os');
+const { json } = require('body-parser');
 
 const nets = networkInterfaces();
 const results = Object.create(null); // or just '{}', an empty object
@@ -44,7 +45,7 @@ for (const name of Object.keys(nets)) {
     }
 }
 
-console.log(results.Wi-Fi[0]);
+console.log(JSON.stringify(results.toString()));
 function charRemove(str,symbol,n)
 {
     let k = 0;

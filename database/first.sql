@@ -89,8 +89,10 @@ INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
     VALUES ('Never Gonna Give You Up','Rick Astley','Rick Rolling.m4a');
 
-CREATE USER 'adonis'@'localhost' IDENTIFIED BY 'password';
+CREATE USER 'orbittas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'P4s5w0rd++';
 
-GRANT ALL PRIVILEGES ON STREAMING_SERVER.* TO 'adonis'@'localhost';
+GRANT ALL PRIVILEGES ON STREAMING_SERVER.* TO 'orbittas'@'localhost';
 
 FLUSH PRIVILEGES;
+
+SHOW VARIABLES LIKE 'validate_password%';

@@ -14,8 +14,8 @@ function DBconnection()
 {
   var con = mysql.createConnection({
   host: "localhost",
-  user: "adonis",
-  password: "password",
+  user: "orbittas",
+  password: "P4s5w0rd++",
   database: "STREAMING_SERVER"
   });
 
@@ -180,7 +180,7 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
   {
     console.log(error);  
     
-    r = null;
+    r = {};
 
     r.STATUS = error;
   }
