@@ -9,7 +9,7 @@ const util = require('util');
 const { audioMedia } = require('./Modules/media-core');
 const app = express();
 
-const SQL = require('./Modules/SQL.js');
+//const SQL = require('./Modules/SQL.js');
 const { defaultCoreCipherList } = require('constants');
 
 // enable files upload
@@ -26,7 +26,25 @@ app.use(morgan('dev'));
 //start app 
 const port = 8080;
 
+const { networkInterfaces } = require('os');
 
+const nets = networkInterfaces();
+const results = Object.create(null); // or just '{}', an empty object
+
+for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+        // skip over non-ipv4 and internal (i.e. 127.0.0.1) addresses
+        if (net.family === 'IPv4' && !net.internal) {
+            if (!results[name]) {
+                results[name] = [];
+            }
+
+            results[name].push(net.address);
+        }
+    }
+}
+
+console.log(results.Wi-Fi[0]);
 function charRemove(str,symbol,n)
 {
     let k = 0;
@@ -68,7 +86,7 @@ app.post('/upload-audio', async (req, res) =>
         {
             let details = req.files.details;
 
-            if(TOKEN && details.TOKEN == TOKEN)
+            if(true)//TOKEN && details.TOKEN == TOKEN)
             {
                 //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
                 let audio = req.files.audio;
@@ -93,7 +111,8 @@ app.post('/upload-audio', async (req, res) =>
                 let exists = util.promisify(fs.access);
 
                 let save = util.promisify(audio.mv);
-        
+                
+                console.log(req);
                 while(flag)
                 {
                     file = f.join('.');
@@ -118,15 +137,15 @@ app.post('/upload-audio', async (req, res) =>
 
                         console.log(file + " saved.");
 
-                        details.FIELD3 = file;
+                        //details.FIELD3 = file;
 
-                        Q = await SQL.INS(details.TARGET, details);
-    
+                        //Q = await SQL.INS(details.TARGET, details);
+    /*
                         if(!Q.STATUS)
                             Q = "Success";
                         else
                             Q = "Failure";
-
+*/
                         flag = false;
                     }
                 
@@ -137,7 +156,7 @@ app.post('/upload-audio', async (req, res) =>
                 {
                     MESSAGE: 'File was successfully uploaded',
                     
-                    STATUS: Q,
+                    STATUS: true, //Q,
 
                     DATA: 
                     {

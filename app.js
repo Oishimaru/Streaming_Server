@@ -599,9 +599,18 @@ client.on("message", (topic, message) =>
 
             PATH = encodeURI(PATH);
 
+            /*
+            {
+                "ACTION":"START",
+                "HOST":"192.0.0.1",
+                "PORT":3400,
+                "PATH":"/audio/1/andrew_rayel_impulse.mp3"
+            }
+            */
             client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
 
             play[index] = setTimeout(client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH})),2000);
+        
         }
         else if(ACTION == "STOP")
         {
@@ -642,6 +651,8 @@ client.on("message", (topic, message) =>
                 clearTimeout(subtimer[index]);
 
                 createServer(index);
+
+                //REGISTER STUFF in error logs with time stamps
             }
         }
     }

@@ -347,31 +347,39 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
   let q2;
 
+  let q3;
+  
   switch(TAB)
   {
     case "ROOMS":
     {
-      q2  = " ROOM_NAME = '"+ COL.FIELD2 +"', READER_ID = '"+ COL.FIELD3 +"', SPEAKER_ID = '" + COL.FIELD4 + "' ";
+      q2  = " ROOM_NAME = '"+ COL.FIELD1 +"', READER_ID = '"+ COL.FIELD2 +"', SPEAKER_ID = '" + COL.FIELD3 + "' ";
       
+      q3 = "WHERE ID = " + COL.FIELD4 + ";";
+
       break;
     }
 
     case "TAGS":
     {
-      q2 = " TAG = '" + COL.FIELD2 + "', SONG_ID = " + COL.FIELD3 + " ";
+      q2 = " TAG = '" + COL.FIELD1 + "', SONG_ID = " + COL.FIELD2 + " ";
+
+      q3 = "WHERE ID = " + COL.FIELD3 + ";";
 
       break;
     }
 
     case "MUSIC":
     {
-      q2 = " SONG_NAME = '" + COL.FIELD2 + "', ARTIST = '" + COL.FIELD3 + "', FL_NAME = '" + COL.FIELD4 + "' ";
+      q2 = " SONG_NAME = '" + COL.FIELD1 + "', ARTIST = '" + COL.FIELD2 + "', FL_NAME = '" + COL.FIELD3 + "' ";
+
+      q3 = "WHERE ID = " + COL.FIELD4 + ";";
 
       break;
     }
   }
 
-  let q3 = "WHERE ID = " + COL.FIELD1 + ";";
+
 
   let Q =  q1 + q2 + q3;
   
