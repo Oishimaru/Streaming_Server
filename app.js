@@ -154,7 +154,8 @@ const incoming  = [
                     "APP/UPDATE",
                     "APP/DELETE",
                     "READER/",
-                    "SPEAKER/"
+                    "SPEAKER/",
+                    "TEST/INIT"
                   ];
 
 const outgoing = [
@@ -162,7 +163,8 @@ const outgoing = [
                     "SERVER/INFO",
                     "SERVER/",
                     "SERVER/AUTHORIZE",
-                    "SERVER/RESPONSE"
+                    "SERVER/RESPONSE",
+                    "TEST/RESPONSE"
                  ];
 
 var info = false;
@@ -182,6 +184,7 @@ function length(obj)
       obj.hasOwnProperty(p) && count++;
     }
     return count; 
+
 }
 
 async function  getCredentials()
@@ -312,7 +315,7 @@ client.on("connect", (ack) =>
 
     console.log("Subscribing to topics...");
 
-    for(let k = 0; k <= 8; k++)
+    for(let k = 0; k < incoming.length; k++)
     {
         client.subscribe(incoming[k], (error,granted) => 
         {
@@ -322,6 +325,40 @@ client.on("connect", (ack) =>
                 console.log(granted);
         });
     }
+
+    setImmediate(async () => 
+    {
+
+        var tab = await SQL.SEL("*","ROOMS","");
+
+        for(let l = 0; l < Object.keys(tab).length; l++)
+        {
+
+            var SPEAKER_ID = tab[l].SPEAKER_ID;
+            
+            var READER_ID = tab[l].READER_ID;
+
+            client.subscribe("SPEAKER/" + SPEAKER_ID, (error,granted) => 
+            {
+                if(error)
+                    console.log(error);
+                else if(granted)
+                    console.log(granted);
+            });
+
+            client.subscribe("READER/" + READER_ID, (error,granted) => 
+            {
+                if(error)
+                    console.log(error);
+                else if(granted)
+                    console.log(granted);
+            });
+
+        }
+    
+    
+    });
+    
 
 });
   
@@ -409,7 +446,10 @@ client.on("message", (topic, message) =>
                         if(Q[0] && !Q.STATUS)
                         {
                             for(let k = 0; k < length(Q); k++)   
-                                Q[k].STATUS = "SUCCESS";          
+                                Q[k].STATUS = "SUCCESS";
+                                
+                            console.log("Object lenght: ");
+                            console.log(Object.keys(Q).length);
                         }
                     
                         Q = JSON.stringify(Q);  
@@ -569,107 +609,149 @@ client.on("message", (topic, message) =>
     }
     else if(ID[0] == "READER")
     {
-        let HOST = "sdrorbittas.sytes.net";
-
-        let PORT;
-
-        let PATH = "/audio";
-
-        let READER_ID =  ID[1];
-
-        let Q = SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","");
-
-        let SPEAKER_ID = Q[0].SPEAKER_ID;
-
-        let index = Q[0].PORT_ID;
-
-        let ACTION = data.ACTION;
-
-        if(ACTION ==  "START")
+        setImmediate(async () => 
         {
-            let TAG = data.TAG;
+            let HOST = "sdrorbittas.sytes.net";
 
-            let Q1 = SQL.SEL("*","TAGS",TAG);
+            let PORT;
 
-            let Q2;
+            let PATH = "/audio";
     
-            let file = "";
-   
-            PORT = port[index];
+            let READER_ID =  ID[1];
             
-            if(Q1[0] && !Q1.STATUS)
-            {
-                let SONG_ID = Q1[0].SONG_ID;
+            console.log("ROOMS WHERE READER_ID = '" + READER_ID + "'");
+            
+            let Q = await SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","");
+            
+            console.log(Q);
+
+            let SPEAKER_ID = Q[0].SPEAKER_ID;
     
-                Q2 = SQL.SEL("*","MUSIC",SONG_ID);
-            }
-            
-            if(Q2[0] && !Q2.STATUS)
-                file = Q2[0].FL_NAME;
-
-            if(file)
-                PATH += "/1/" + file;
-            else
-                PATH += "/0/default.mp3";
-
-            PATH = encodeURI(PATH);
-
-            /*
+            let index = Q[0].PORT_ID;
+    
+            let ACTION = data.ACTION;
+    
+            if(ACTION ==  "START")
             {
-                "ACTION":"START",
-                "HOST":"192.0.0.1",
-                "PORT":3400,
-                "PATH":"/audio/1/andrew_rayel_impulse.mp3"
-            }
-            */
-            client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
-
-            play[index] = setTimeout(client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH})),2000);
+                let TAG = data.TAG;
+    
+                let Q1 = await SQL.SEL("*","TAGS",TAG);
+    
+                let Q2;
         
-        }
-        else if(ACTION == "STOP")
-        {
-            client.publish(outgoing[2] + SPEAKER_ID, data);
+                let file = "";
+       
+                PORT = port[index];
+                
+                if(Q1[0] && !Q1.STATUS)
+                {
+                    let SONG_ID = Q1[0].SONG_ID;
+        
+                    Q2 = await SQL.SEL("*","MUSIC",SONG_ID);
 
-            timer[index] = setTimeout( () =>
-            {
-                httpTerminator[index].terminate();
-
-                subtimer[index] = setTimeout(createServer(index),5000);
+                    if(Q2[0] && !Q2.STATUS)
+                        file = Q2[0].FL_NAME;
+                }
+    
+                if(file)
+                    PATH += "/1/" + file;
+                else
+                    PATH += "/0/default.mp3";
+    
+                PATH = encodeURI(PATH);
+    
+                /*
+                {
+                    "ACTION":"START",
+                    "HOST":"192.0.0.1",
+                    "PORT":3400,
+                    "PATH":"/audio/1/andrew_rayel_impulse.mp3"
+                }
+                */
+                client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
+                
+                console.log("[" + outgoing[2] + + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                console.log("Trying again in 5 seconds...");
+                play[index] = setTimeout(() =>
+                {
+                    client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}))
+                    console.log("Last try...");
+                    console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                },5000);
             
-            },2000);
-        }
+            }
+            else if(ACTION == "STOP")
+            {
+                client.publish(outgoing[2] + SPEAKER_ID, JSON.stringify(data));
+    
+                timer[index] = setTimeout( () =>
+                {
+                    httpTerminator[index].terminate();
 
+                    console.log("connection terminated.");
+                    
+                    subtimer[index] = setTimeout(createServer(index),5000);
+                    
+                    
+                },5000);
+            }
+
+        });
     }
     else if(ID[0] ==  "SPEAKER")
     {
-        let SPEAKER_ID =  ID[1];
-
-        let Q = SQL.SEL("*","ROOMS WHERE SPEAKER_ID = '" + SPEAKER_ID + "'","");
-
-        let index = Q[0].PORT_ID;
-
-        switch(data.STATUS)
+        
+        setImmediate(async () => 
         {
-            case "PLAYING":
+            let SPEAKER_ID =  ID[1];
+
+            let Q = await SQL.SEL("*","ROOMS WHERE SPEAKER_ID = '" + SPEAKER_ID + "'","");
+    
+            let index = Q[0].PORT_ID;
+    
+            switch(data.STATUS)
             {
-                clearTimeout(play[index]);
+                case "PLAYING":
+                {
+                    clearTimeout(play[index]);
+    
+                    console.log("Received streaming confirmation.");
+
+                    break;
+                }
+    
+                case "OK":
+                {
+                    clearTimeout(timer[index]); 
+    
+                    console.log("Received connection end confirmation.");
+
+                    break;
+                }
+    
+                case "DC":
+                {
+                    clearTimeout(subtimer[index]);
+    
+                    createServer(index);
+    
+                    console.log("Received reconnection ready confirmation.");
+                    
+                    break;
+                    //REGISTER STUFF in error logs with time stamps
+                }
             }
 
-            case "OK":
-            {
-                clearTimeout(timer[index]); 
-            }
+        });
+        
+    }
+    else if(ID[0] == "TEST")
+    {
+        
+        console.log(message);
 
-            case "DC":
-            {
-                clearTimeout(subtimer[index]);
+        client.publish("TEST/RESPONSE","PONG");
 
-                createServer(index);
-
-                //REGISTER STUFF in error logs with time stamps
-            }
-        }
     }
     else
     {

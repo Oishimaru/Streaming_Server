@@ -33,21 +33,28 @@ async function portAvailable(DB,s)
 
   console.log("SELECT");
 
-  let Q = "SELECT * FROM TCP_PORTS WHERE PORT_STATUS = 'UNASSIGNED' TOP 1;"
+  let Q = "SELECT * FROM TCP_PORTS WHERE PORT_STATUS = 'UNASSIGNED' LIMIT 1;"
 
   try
   {
     let result = await DB.promise().query(Q);
     
-    r = JSON.parse(JSON.stringify(result));
+    console.log("TROUBLEMAKER?")
+
+    r = JSON.parse(JSON.stringify(result[0][0]));
       
     console.log(r);
 
     r = r.ID;
+
+    console.log("TROUBLEMAKER?")
+    console.log(r);
   }
   catch(error)
   {
       console.log(error);
+
+      r = {};
 
       r.STATUS = error.toString();
   }
@@ -125,6 +132,8 @@ async function portUnassign(port,DB,s)
   {
       console.log(error);
 
+      r = {};
+
       r.STATUS = error.toString();
   }
 
@@ -148,6 +157,8 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
       DB.end();
       
       console.log(error);
+
+      r = {};
 
       r.STATUS = error;
     }  
@@ -205,6 +216,8 @@ module.exports.INS = async function INS(TAB,COL)
       DB.end();
       
       console.log(error);
+      
+      r = {};
 
       r.STATUS = error;
     }  
@@ -230,7 +243,7 @@ module.exports.INS = async function INS(TAB,COL)
     {
       q2  = " (ROOM_NAME,READER_ID,SPEAKER_ID,PORT_ID) ";
 
-      port = portAvailable(DB,r);   
+      port = await portAvailable(DB,r);   
       
       if(port.STATUS)
       {
@@ -239,7 +252,7 @@ module.exports.INS = async function INS(TAB,COL)
         return port;
       }
         
-      q3 =  "VALUES ('" + COL.FIELD1, + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "'," + port.toString() + ");";
+      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "'," + port.toString() + ");";
       
       break;
     }
@@ -248,7 +261,7 @@ module.exports.INS = async function INS(TAB,COL)
     {
       q2 = " (TAG,SONG_ID,DATE_REG) ";
 
-      q3 =  "VALUES ('" + COL.FIELD1, + "'," + COL.FIELD2 + ",'" + Date.now().toString() + "';";
+      q3 =  "VALUES ('" + COL.FIELD1 + "'," + COL.FIELD2 + ",'" + Date.now().toString() + "';";
 
       break;
     }
@@ -257,7 +270,7 @@ module.exports.INS = async function INS(TAB,COL)
     {
       q2 = " (SONG_NAME,ARTIST,FL_NAME) ";
 
-      q3 =  "VALUES ('" + COL.FIELD1, + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "';";
+      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "';";
 
       break;
     }
@@ -284,13 +297,15 @@ module.exports.INS = async function INS(TAB,COL)
   
   console.log(Q);
 
+  console.log("wa");
+
   try
   {
     let result = await DB.promise().query(Q);
 
     if(TAB == "ROOMS")
     {
-      r = portAssign(port,DB,r);
+      r = await portAssign(port,DB,r);
 
       if(r.STATUS)
       {
@@ -307,6 +322,8 @@ module.exports.INS = async function INS(TAB,COL)
   catch(error)
   {
       console.log(error);
+
+      r = {};
 
       r.STATUS = error;
 
@@ -333,6 +350,8 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       DB.end();
       
       console.log(error);
+
+      r = {};
 
       r.STATUS = error;
     }  
@@ -395,6 +414,8 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   {
       console.log(error);
 
+      r = {};
+
       r.STATUS = error;
   }
 
@@ -452,6 +473,8 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   catch(error)
   { 
     console.log(error);
+
+    r = {};
 
     r.STATUS = error;
   }
