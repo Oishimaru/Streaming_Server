@@ -13,6 +13,10 @@ const http = require('http');
 
 const express = require('express');
 
+const fs = require('fs');
+
+const util = require('util');
+
 const throttle = require('express-throttle-bandwidth');
 
 const { createHttpTerminator } = require('http-terminator')
@@ -22,8 +26,6 @@ const core = require('./Modules/media-core.js');
 /*************************VARIABLES AND INSTANCES*****************************/
 
 var port = [3400,3401,3402,3403,3404,3405,3406,3407,3408,3409,3410];
-
-const uport = 8081;
 
 var app  = [];
 
@@ -37,18 +39,137 @@ var timer = [];
 
 var subtimer = [];
 
+var readiness = 0;
+
 /*********************************FUNCTIONS***********************************/
 
-function createServer(i)
+async function errorLog(prefix,error,num)
+{
+    let exists = util.promisify(fs.access);
+    
+    let writeFile = util.promisify(fs.writeFile);
+    
+    let timeStamp = Date().toString();
+
+    let folder = "./logs/"
+
+    let file = "error";
+
+    let sufix = ".txt";
+
+    let n = 0;
+
+    let f;
+
+    let x = true;
+
+    console.log("An error has ocurred. \n\r");
+    console.log("logging...\n\r");
+
+    if(prefix)
+      f = folder + prefix + "-" + file + num.toString() + sufix;
+    else 
+      f = folder + file + num.toString() + sufix;
+
+    while(x)
+    {
+        try
+        {
+            if(n > 0)
+            {
+              if(prefix)
+                f = folder + prefix + "-" + file + num.toString() + "(" + n.toString() + ")" + sufix;
+              else 
+                f = folder + file + num.toString() + "(" + n.toString() + ")" + sufix;
+            }
+
+            await exists(f,fs.constants.F_OK);
+
+            n++;
+
+            console.log(n.toString() + ") " + f + " exists.");
+        }
+        catch
+        {
+            try
+            {
+                let info = "Date: " + timeStamp + "\n\r\n\r";
+
+                info += error.toString(); 
+
+                console.log(info);
+
+                console.log("");
+
+                await writeFile(f,info);
+
+                console.log(n.toString() + ") " + f + " saved.");
+            }
+            catch(e)
+            {
+                console.log(e);
+            }
+            finally
+            {
+                x = false;
+            }            
+        }
+    }
+}
+
+
+function rainCheck()
+{
+    readiness++;
+
+    if(readiness == 6)
+    {
+        console.log("\x1b[37m Server is up!"); //set off alarm
+    }
+}
+
+function hash(print,symbol)
+{
+    console.log("\x1b[35m\x1b[1m");
+
+    for(let k = 0; k < 99; k++)
+    {
+        process.stdout.write(symbol);
+    }
+    console.log(symbol);
+    
+    console.log();
+
+    console.log(print);
+
+    console.log();
+
+    for(let k = 0; k < 99; k++)
+    {
+        process.stdout.write(symbol);
+    }
+   
+    console.log(symbol);
+
+    console.log("\x1b[0m");
+}
+
+function createServer(i,first)
 {
     app[i] = express();
 
     app[i].use(throttle(262144)); //256 kbps?
 
-    server[i] = app[i].listen(port[i], (err) =>
+    server[i] = app[i].listen(port[i], (error) => 
     {
-        if(err)
-            console.log(err);
+        if (first)
+        {
+            hash("STREAMING: HTTP SOCKTES","*");
+    
+            console.log("HTTP Socket Creation...");
+        } 
+        if(error)
+            errorLog("",error,0); //error0
 
         console.log("Creating Socket: Listening on port " + port[i] + ".");
     });
@@ -60,24 +181,36 @@ function createServer(i)
     app[i].get('*',core.routeError); 
 }
 
-/*******************************INITIALIZATION********************************/
+async function createServers(n)
+{
+    let first = true;
 
-console.log("HTTP Socket Creation...");
+    for(let k = 0; k <= n; k++)
+    {
+        createServer(k,first);
+
+        first = false;
+    }
+        
+}
+/*******************************INITIALIZATION********************************/
 
 try
 {
-    for(let k = 0; k <= 10; k++)
-        createServer(k);
+    setImmediate(async () =>
+    {
+        await  createServers(10);
 
-    console.log("All sockets created succesfully.");
+        rainCheck();
+
+        console.log("All sockets created succesfully.");
+    });
+
 }
-catch(error)
+catch(error) //1
 {
-    console.log("An error has ocurred: ");
-
-    console.log(error);
+   errorLog("",error,1);
 }
-
 
 /*******************************************************************************
                               MQTT BROKER (AEDES)
@@ -105,7 +238,11 @@ var wsPort = 5000;
 
 broker.listen(nsport, () =>
 {
-	console.log('server listening on port', port);
+    hash("MQTT BROKER (AEDES)","*");
+
+    console.log('Aedes (MQTT netSocket) listening on port ', nsport);
+    
+    rainCheck();
 });
 
 /*WEBSOCKET SERVER*/
@@ -114,8 +251,10 @@ ws.createServer({ server: httpServer }, aedes.handle);
 
 httpServer.listen(wsPort,  () =>
 {
-    console.log('Aedes MQTT-WS listening on port: ' + wsPort);
+    console.log('Aedes (MQTT Web-socket) listening on port: ' + wsPort);
     aedes.publish({ topic: 'aedes/hello', payload: "I'm broker " + aedes.id });
+
+    rainCheck();
 });
 
 /*******************************************************************************
@@ -124,10 +263,6 @@ httpServer.listen(wsPort,  () =>
 /**********************************MODULES*************************************/
 
 const mqtt = require("mqtt");
-
-const fs = require('fs');
-
-const util = require('util');
 
 const randomToken = require('random-token').create('abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
 
@@ -140,8 +275,6 @@ const { setgroups } = require('process');
 /*************************VARIABLES AND INSTANCES*****************************/
 
 const client = mqtt.connect("mqtt://localhost:3000");
-
-/**********************************MODULES*************************************/
 
 const incoming  = [
                     "READER/INFO",
@@ -235,9 +368,9 @@ async function  getCredentials()
 
             console.log(filename + " succesfully created.")
         }
-        catch(error)
+        catch(error) //2
         {
-            console.log(error);
+           errorLog("",error,2);
         }
 
         info = data;
@@ -275,9 +408,9 @@ async function setCredentials(USER,PASS)
 
         output = {"STATUS":"SUCCESS"};
     }
-    catch(error)
+    catch(error) //error3
     {
-        console.log(error);
+        errorLoge("",error,3);
 
         console.log('Unable to set new credentials.')
         
@@ -297,21 +430,19 @@ function newSubscription(device,id)
 
     client.subscribe(device, (error,granted) => 
     {
-        if(error)
-            console.log(error);
+        if(error) //error4
+            errorLog("",error,4);
         else if(granted)
             console.log(granted);
     });
 
 }
 
-/******************************EVENT HANDLING********************************/
-
-/*ON CONNECTION*/
-
-client.on("connect", (ack) => 
+async function initSubs()
 {
-    console.log(ack + ": Connected to broker on port " + nsport + ".");
+    let tab = await SQL.SEL("*","ROOMS","");
+
+    console.log("Connected to broker on port " + nsport + ".");
 
     console.log("Subscribing to topics...");
 
@@ -319,46 +450,67 @@ client.on("connect", (ack) =>
     {
         client.subscribe(incoming[k], (error,granted) => 
         {
-            if(error)
-                console.log(error);
+            if(error) //error5
+                errorLog("",error,5)
             else if(granted)
                 console.log(granted);
         });
     }
 
-    setImmediate(async () => 
+    let SPEAKER_ID;
+
+    let READER_ID;
+    
+    let len = Object.keys(tab).length;
+
+    for(let l = 0; l < len; l++)
     {
-
-        var tab = await SQL.SEL("*","ROOMS","");
-
-        for(let l = 0; l < Object.keys(tab).length; l++)
-        {
-
-            var SPEAKER_ID = tab[l].SPEAKER_ID;
+        SPEAKER_ID = tab[l].SPEAKER_ID;
             
-            var READER_ID = tab[l].READER_ID;
+        READER_ID = tab[l].READER_ID;
 
-            client.subscribe("SPEAKER/" + SPEAKER_ID, (error,granted) => 
+        client.subscribe("SPEAKER/" + SPEAKER_ID, (error,granted) => 
+        {
+            if(error) //error6
+                errorLog("",error,6);
+            else if(granted) 
             {
-                if(error)
-                    console.log(error);
-                else if(granted)
-                    console.log(granted);
-            });
+                console.log(granted);
+                
+                if(l >= (len - 1))
+                    rainCheck();
+            }
+          
+        });
 
-            client.subscribe("READER/" + READER_ID, (error,granted) => 
+        client.subscribe("READER/" + READER_ID, (error,granted) => 
+        {
+            if(error) //error7
+                errorLog("",error,7);
+            else if(granted)
             {
-                if(error)
-                    console.log(error);
-                else if(granted)
-                    console.log(granted);
-            });
+                console.log(granted);
+                
+                if(l >= (len - 1))
+                    rainCheck();
+            }
+        });
 
-        }
-    
-    
-    });
-    
+    }
+
+}
+/******************************EVENT HANDLING********************************/
+
+/*ON CONNECTION*/
+
+client.on("connect", (ack) => 
+{
+    setImmediate(async () =>
+    {
+        hash("MQTT CLIENT","*");
+
+        await initSubs();
+    });    
 
 });
   
@@ -371,7 +523,17 @@ client.on("message", (topic, message) =>
 
     let ID = topic.split('/');
 
-    let data = JSON.parse(message);
+    let data;
+    
+    try
+    {
+        data = JSON.parse(message);
+    }
+    catch(error) //error8
+    {
+        errorLog("",error,8);
+    }
+    
     
     if(ID[1] == "INFO")
     {
@@ -453,7 +615,7 @@ client.on("message", (topic, message) =>
                         }
                     
                         Q = JSON.stringify(Q);  
-0
+
                         client.publish(outgoing[4],Q);
                     }
                     else
@@ -764,5 +926,197 @@ client.on("message", (topic, message) =>
 
 client.on("error", (err) => 
 {
-    console.log(err);
+    errorLog("",err,9); //error9
 });
+
+/*******************************************************************************
+                              UPLOAD HTTP SOCKET
+*******************************************************************************/
+
+/**********************************MODULES*************************************/
+
+const fileUpload = require('express-fileupload');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const morgan = require('morgan');
+const _ = require('lodash');
+
+/*************************VARIABLES AND INSTANCES*****************************/
+
+const up = express();
+
+const uport = 8081;
+
+/*********************************FUNCTIONS***********************************/
+
+function charRemove(str,symbol,n)
+{
+    let k = 0;
+
+    for(let i = 0; i<str.length; i++)
+    {
+        if(str[i] == symbol)
+        {
+            k++;
+
+            if(k == (n -1))
+            {
+                str = str.slice(0,i) + str.slice(i+1);
+
+                break;
+            }
+        }
+    } 
+
+    return str;
+}
+
+/*******************************INITIALIZATION********************************/
+
+// enable files upload
+up.use(fileUpload(
+{
+    createParentPath: true
+}));
+
+//add other middleware
+up.use(cors());
+up.use(bodyParser.json());
+up.use(bodyParser.urlencoded({extended: true}));
+up.use(morgan('dev'));
+
+
+up.listen(uport, (error) => 
+{
+    hash("UPLOAD HTTP PORT","*");
+
+    if(error)
+    {
+        errorLog("",error,10); //error10
+    }
+    else
+    {
+        console.log(`App is listening on port ${uport}.`)
+
+        rainCheck();
+    }
+    
+});
+
+/******************************EVENT HANDLING********************************/
+
+up.post('/upload-audio', async (req, res) => 
+{
+    try 
+    {
+        if(!req.files) 
+        {
+            res.send(
+            {
+                status: false,
+                message: 'No file uploaded'
+            });
+        } 
+        else 
+        {
+            let details = req.files.details;
+
+            if(true)//TOKEN && details.TOKEN == TOKEN)
+            {
+                //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
+                let audio = req.files.audio;
+                
+                let Q;
+                
+                let flag = true;
+
+                let n = 0;
+                
+                let path = "./files/music/";
+            
+                let file = audio.name;
+                
+                let f = file.split('.');
+            
+                let dots = f.length;
+
+                f[dots] = f[dots - 1];
+                f[dots - 1] = "";
+        
+                let exists = util.promisify(fs.access);
+
+                let save = util.promisify(audio.mv);
+                
+                console.log(req);
+                while(flag)
+                {
+                    file = f.join('.');
+
+                    file = charRemove(file,'.',dots);
+
+                    try
+                    {
+                        await exists(path + file, fs.F_OK); 
+
+                        console.log(n.toString() + ". File exists. ");
+
+                        n++;
+
+                        f[dots - 1] = "("+n.toString()+")";
+                    }
+                    catch(error)
+                    {
+                        console.log("Saving " + file);
+
+                        await save(path + file);
+
+                        console.log(file + " saved.");
+
+                        //details.FIELD3 = file;
+
+                        //Q = await SQL.INS(details.TARGET, details);
+    /*
+                        if(!Q.STATUS)
+                            Q = "Success";
+                        else
+                            Q = "Failure";
+*/
+                        flag = false;
+                    }
+                
+                }
+            
+            //send response
+                res.send(
+                {
+                    MESSAGE: 'File was successfully uploaded',
+                    
+                    STATUS: true, //Q,
+
+                    DATA: 
+                    {
+                        NAME: file,
+                        MIMETYPE: audio.mimetype,
+                        SIZE: audio.size
+                    }
+
+                });
+            }
+            else if (!TOKEN)
+            {
+                res.status(500).send({STATUS:"LOGIN"});
+            }
+            else
+            {
+                res.status(500).send({STATUS:"INVALID"});
+            }
+        }
+    } 
+    catch(error) //error11
+    {
+        errorLog("",error,11);
+
+        res.status(500).send({STATUS:"ERROR"});
+    }
+});
+

@@ -8,6 +8,10 @@
 
 const mysql = require('mysql2');
 
+const fs = require('fs');
+
+const util = require('util');
+
 /*********************************FUNCTIONS***********************************/
 
 function DBconnection()
@@ -20,6 +24,82 @@ function DBconnection()
   });
 
   return con;
+}
+
+async function errorLog(prefix,error,num)
+{
+    let exists = util.promisify(fs.access);
+    
+    let writeFile = util.promisify(fs.writeFile);
+    
+    let timeStamp = Date().toString();
+
+    let folder = "./logs/"
+
+    let file = "error";
+
+    let sufix = ".txt";
+
+    let n = 0;
+
+    let f;
+
+    let x = true;
+
+    console.log("An error has ocurred. \n\r");
+    console.log("logging...\n\r");
+
+    if(prefix)
+      f = folder + prefix + "-" + file + num.toString() + sufix;
+    else 
+      f = folder + file + num.toString() + sufix;
+
+    while(x)
+    {
+        try
+        {
+            if(n > 0)
+            {
+              if(prefix)
+                f = folder + prefix + "-" + file + num.toString() + "(" + n.toString() + ")" + sufix;
+              else 
+                f = folder + file + num.toString() + "(" + n.toString() + ")" + sufix;
+            }
+
+
+            await exists(f,fs.constants.F_OK);
+
+            n++;
+
+            console.log(n.toString() + ") " + f + " exists.");
+    
+        }
+        catch
+        {
+            try
+            {
+                let info = "Date: " +  timeStamp +  "\n\r\n\r";
+
+                info += error.toString();
+
+                console.log(info);
+
+                console.log("");
+
+                await writeFile(f,info);
+
+                console.log(n.toString() + ") " + f + " saved.");
+            }
+            catch(e)
+            {
+                console.log(e);
+            }
+            finally
+            {
+                x = false;
+            }       
+        }
+    }
 }
 
 async function portAvailable(DB,s)
@@ -50,9 +130,9 @@ async function portAvailable(DB,s)
     console.log("TROUBLEMAKER?")
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-error0
   {
-      console.log(error);
+      errorLog("sql",error,0);
 
       r = {};
 
@@ -90,9 +170,9 @@ async function portAssign(port,DB,s)
     
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-error1
   {
-      console.log(error);
+      errorLog("sql",error,1);
 
       r.STATUS = error.toString();
   }
@@ -128,9 +208,9 @@ async function portUnassign(port,DB,s)
       
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-errror2
   {
-      console.log(error);
+      errorLog("sql",error,2);
 
       r = {};
 
@@ -152,11 +232,18 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
 
   DB.connect( (error) =>
   {
-    if(error)
+    if(error) //sql-error3
     {
-      DB.end();
+      try
+      {
+        DB.end();
+      }
+      catch
+      {
+
+      }
       
-      console.log(error);
+      errorLog("sql",error,3);
 
       r = {};
 
@@ -187,9 +274,9 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
 
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-error4
   {
-    console.log(error);  
+    errorLog("sql",error,4);
     
     r = {};
 
@@ -213,9 +300,16 @@ module.exports.INS = async function INS(TAB,COL)
   {
     if(error)
     {
-      DB.end();
+      try
+      {
+        DB.end();
+      }
+      catch
+      {
+
+      }
       
-      console.log(error);
+      errorLog("sql",error,5); //sql-error5
       
       r = {};
 
@@ -319,9 +413,9 @@ module.exports.INS = async function INS(TAB,COL)
       
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-error6
   {
-      console.log(error);
+      errorLog("sql",error,6);
 
       r = {};
 
@@ -347,9 +441,16 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   {
     if(error)
     {
-      DB.end();
+      try
+      {
+        DB.end();
+      }
+      catch
+      {
+
+      }
       
-      console.log(error);
+      errorLog("sql",error,7); //sql-error7
 
       r = {};
 
@@ -410,9 +511,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-error8
   {
-      console.log(error);
+      errorLog("sql",error,8);
 
       r = {};
 
@@ -441,9 +542,16 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   {
     if(error)
     {
-      DB.end();
+      try
+      {
+        DB.end();
+      }
+      catch
+      {
+
+      }
       
-      console.log(error);
+      errorLog("sql",error,9); //sql-error9
 
       r = {"STATUS":error};
     }  
@@ -470,9 +578,9 @@ module.exports.DEL = async function DEL(TAB,WHERE)
       
     console.log(r);
   }
-  catch(error)
+  catch(error) //sql-error10
   { 
-    console.log(error);
+    errorLog("sql",error,10);
 
     r = {};
 
