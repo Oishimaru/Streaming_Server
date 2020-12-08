@@ -1,0 +1,13 @@
+[Unit]
+Description=Streaming Server Node.js Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/sudo /usr/bin/node /var/www/Streaming_Server-main/app.js
+StandardOutput=inherit
+StandardError=inherit
+Restart=on-failure
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

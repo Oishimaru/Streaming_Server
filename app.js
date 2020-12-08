@@ -122,9 +122,9 @@ function rainCheck()
 {
     readiness++;
 
-    if(readiness == 6)
+    if(readiness >= 6)
     {
-        console.log("\x1b[37m Server is up!"); //set off alarm
+        console.log("Server is up!"); //set off alarm
     }
 }
 
@@ -442,6 +442,11 @@ async function initSubs()
 {
     let tab = await SQL.SEL("*","ROOMS","");
 
+    let len = Object.keys(tab).length;
+
+    if(!len)
+        rainCheck();
+
     console.log("Connected to broker on port " + nsport + ".");
 
     console.log("Subscribing to topics...");
@@ -460,8 +465,6 @@ async function initSubs()
     let SPEAKER_ID;
 
     let READER_ID;
-    
-    let len = Object.keys(tab).length;
 
     for(let l = 0; l < len; l++)
     {
