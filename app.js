@@ -1024,7 +1024,7 @@ up.post('/upload-audio', async (req, res) =>
         {
             let details = req.files.details;
 
-            if(true)//TOKEN && details.TOKEN == TOKEN)
+            if(TOKEN && details.TOKEN == TOKEN)
             {
                 //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
                 let audio = req.files.audio;
@@ -1075,15 +1075,15 @@ up.post('/upload-audio', async (req, res) =>
 
                         console.log(file + " saved.");
 
-                        //details.FIELD3 = file;
+                        details.FIELD3 = file;
 
-                        //Q = await SQL.INS(details.TARGET, details);
-    /*
+                        Q = await SQL.INS("MUSIC", details);
+    
                         if(!Q.STATUS)
-                            Q = "Success";
+                            Q = "Succeeded on modifying database.";
                         else
-                            Q = "Failure";
-*/
+                            Q = "Failed to modify database";
+
                         flag = false;
                     }
                 
@@ -1094,7 +1094,7 @@ up.post('/upload-audio', async (req, res) =>
                 {
                     MESSAGE: 'File was successfully uploaded',
                     
-                    STATUS: true, //Q,
+                    STATUS: Q,
 
                     DATA: 
                     {
