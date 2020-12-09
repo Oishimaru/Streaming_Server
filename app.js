@@ -1022,7 +1022,7 @@ up.post('/upload-audio', async (req, res) =>
         } 
         else 
         {
-            let details = req.body.details;
+            let details = JSON.parse(req.body.details);
             
     
             if(TOKEN && details.TOKEN == TOKEN)
