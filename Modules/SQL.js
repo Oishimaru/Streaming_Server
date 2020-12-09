@@ -364,7 +364,7 @@ module.exports.INS = async function INS(TAB,COL)
     {
       q2 = " (SONG_NAME,ARTIST,FL_NAME) ";
 
-      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "';";
+      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "');";
 
       break;
     }

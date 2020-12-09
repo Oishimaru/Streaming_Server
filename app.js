@@ -1022,8 +1022,9 @@ up.post('/upload-audio', async (req, res) =>
         } 
         else 
         {
-            let details = req.files.details;
-
+            let details = req.body.details;
+            
+    
             if(TOKEN && details.TOKEN == TOKEN)
             {
                 //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
@@ -1075,9 +1076,15 @@ up.post('/upload-audio', async (req, res) =>
 
                         console.log(file + " saved.");
 
-                        details.FIELD3 = file;
+                        let dt = {};
 
-                        Q = await SQL.INS("MUSIC", details);
+                        dt.FIELD1 = details.song;
+
+                        dt.FIELD2 = details.artist;
+
+                        dt.FIELD3 = file;
+
+                        Q = await SQL.INS("MUSIC", dt);
     
                         if(!Q.STATUS)
                             Q = "Succeeded on modifying database.";
