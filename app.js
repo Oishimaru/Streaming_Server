@@ -617,7 +617,7 @@ client.on("message", (topic, message) =>
                             console.log(Object.keys(Q).length);
                         }
                     
-                        Q = "{" + data.TARGET + ":{" +  JSON.stringify(Q) + "}}";  
+                        Q = "{\"" + data.TARGET + "\":{" +  JSON.stringify(Q) + "}}";  
 
                         client.publish(outgoing[4],Q);
                     }
