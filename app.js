@@ -608,18 +608,29 @@ client.on("message", (topic, message) =>
                     {
                         let Q = await SQL.SEL("*", data.TARGET, data.FIELD1);
                         
-                        if(Q[0] && !Q.STATUS)
-                        {    
-                            console.log("\n\rList was successfully retrived.\n\r");
+                        if(!Q.STATUS)
+                        {  
+
+                            let ST = "";
+
+                            if(Q[0])
+                            {
+                                ST = "\"STATUS\":\"SUCCESS\"";
+
+                                console.log("\n\rList was successfully retrived.\n\r");
+                            }
+                            else
+                            {
+                                ST = "\"STATUS\":\"EMPTY\"";
+                                console.log("\n\rList is empty.\n\r");
+                            }
                                 
                             process.stdout.write("Object lenght: ");
 
                             console.log(Object.keys(Q).length);
 
                             console.log("");
-
-                            let ST = "\"STATUS\":\"SUCCESS\"";
-
+                            
                             Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
                         }  
                         else
