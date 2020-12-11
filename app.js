@@ -613,6 +613,8 @@ client.on("message", (topic, message) =>
                         if(Q[0] && !Q.STATUS)
                         {
                             ST = "\"STATUS\":\"SUCCESS\"";
+                            
+                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
 
                             console.log("\n\rList was successfully retrived.\n\r");
                                 
@@ -621,10 +623,7 @@ client.on("message", (topic, message) =>
                             console.log(Object.keys(Q).length);
 
                             console.log("");
-                        }
-                        
-                        if(ST)
-                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
+                        }  
                         else
                             Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "}";
 
