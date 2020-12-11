@@ -607,17 +607,26 @@ client.on("message", (topic, message) =>
                     if(TOKEN && data.TOKEN == TOKEN)
                     {
                         let Q = await SQL.SEL("*", data.TARGET, data.FIELD1);
+                        
+                        let ST = "";
 
                         if(Q[0] && !Q.STATUS)
                         {
-                            for(let k = 0; k < length(Q); k++)   
-                                Q[k].STATUS = "SUCCESS";
+                            ST = "\"STATUS\":\"SUCCESS\"";
+
+                            console.log("\n\rList was successfully retrived.\n\r");
                                 
-                            console.log("Object lenght: ");
+                            process.stdout.write("Object lenght: ");
+
                             console.log(Object.keys(Q).length);
+
+                            console.log("");
                         }
-                    
-                        Q = "{\"" + data.TARGET + "\":{" +  JSON.stringify(Q) + "}}";  
+                        
+                        if(ST)
+                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
+                        else
+                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "}";
 
                         client.publish(outgoing[4],Q);
                     }
