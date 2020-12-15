@@ -499,13 +499,13 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
       try
       {
-        oldfile = await DB.promise().query("SELECT FL_NAME FROM MUSIC WHERE ID = " + COL.FIELD4);
+        oldfile = await DB.promise().query("SELECT FL_NAME FROM MUSIC WHERE ID = " + COL.FIELD4 + ";");
 
         console.log(oldfile);
       }
       catch(error)
       {
-        errorLog("sql",error,8);
+        errorLog("sql",error,11);
 
         r = {};
 
