@@ -629,12 +629,12 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   
   try
   {
-    let result = DB.query("DELETE FROM " + Q + ";");
+    let result = await DB.promise().query("DELETE FROM " + Q + ";");
 
     if(TAB == "ROOMS")
     {
       if(query[0] && !query.STATUS)
-        portUnassign(query[0].PORT_ID,DB,r);
+        await portUnassign(query[0].PORT_ID,DB,r);
     }
 
     r = JSON.parse(JSON.stringify(result));
