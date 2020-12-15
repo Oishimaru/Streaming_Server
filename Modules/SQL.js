@@ -502,6 +502,8 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
 
   let Q =  q1 + q2 + q3;
+
+  console.log(Q);
   
   try
   {
