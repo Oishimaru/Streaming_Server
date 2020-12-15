@@ -500,6 +500,8 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       try
       {
         oldfile = await DB.promise().query("SELECT FL_NAME FROM MUSIC WHERE ID = " + COL.FIELD4);
+
+        console.log(oldfile);
       }
       catch(error)
       {
@@ -530,9 +532,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       
       console.log(r);
 
-      let prev = oldfile[0].FL_NAME ;
+      let prev = oldfile[0].FL_NAME;
 
-      let nw  = COL.FIELD4;
+      let nw  = COL.FIELD3;
 
       if(TAB == "MUSIC")
       {
