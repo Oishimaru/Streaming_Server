@@ -435,6 +435,8 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 {
   let DB = DBconnection();
 
+  let oldfile = "";
+
   let r = "";
     
   DB.connect( (error) =>
@@ -463,7 +465,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
   console.log("UPDATE");
 
-  let q1 = "UPDATE " + TAB + "SET";
+  let q1 = "UPDATE " + TAB + " SET";
 
   let q2;
 
@@ -495,6 +497,19 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
       q3 = "WHERE ID = " + COL.FIELD4 + ";";
 
+      try
+      {
+        oldfile = DB.promise().query("SELECT FL_NAME FROM MUSIC WHERE ID = " + COL.FIELD4);
+      }
+      catch(error)
+      {
+        errorLog("sql",error,8);
+
+        r = {};
+
+        r.STATUS = error;
+      }
+      
       break;
     }
   }
@@ -507,11 +522,38 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   
   try
   {
-    let result = await DB.promise().query(Q);
+    if(TAB!= "MUSIC" || Object.keys(odfile).length > 0)
+    {
+      let result = await DB.promise().query(Q);
 
-    r = JSON.parse(JSON.stringify(result));
-    
-    console.log(r);
+      r = JSON.parse(JSON.stringify(result));
+      
+      console.log(r);
+
+      let prev = oldfile[0].FL_NAME ;
+
+      let nw  = COL.FIELD4;
+
+      if(TAB == "MUSIC")
+      {
+        if(prev != nw)
+        {
+          let rename = util.promisify(fs.rename);
+
+          let path = "./files/music/";
+        
+          await rename(path + prev, path + nw);
+  
+          console.log("File " + prev +" canged to " + nw + ".");
+        }
+        else
+        {
+          console.log("FIle name unchanged.");
+        }
+        
+      }
+
+    } 
   }
   catch(error) //sql-error8
   {
