@@ -581,9 +581,6 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 { 
   var query;
 
-  if(TAB = "ROOMS")
-    query = SQL.SEL("*",TAB,WHERE);
-
   var DB = DBconnection();
   
   var r = "";
@@ -606,6 +603,22 @@ module.exports.DEL = async function DEL(TAB,WHERE)
       r = {"STATUS":error};
     }  
   });
+
+  if(TAB == "ROOMS")
+  {
+    try
+    {
+      query = await SEL("*",TAB,WHERE);
+    }
+    catch(error) //sql-error12
+    { 
+      errorLog("sql",error,12);
+  
+      r = {};
+  
+      r.STATUS = error;
+    }
+  }  
 
   if(r.STATUS)
     return r;
