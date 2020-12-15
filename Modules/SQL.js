@@ -522,7 +522,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   
   try
   {
-    if(TAB!= "MUSIC" || Object.keys(odfile).length > 0)
+    if(TAB!= "MUSIC" || Object.keys(oldfile).length > 0)
     {
       let result = await DB.promise().query(Q);
 
