@@ -596,10 +596,10 @@ client.on("message", (topic, message) =>
               
                 break;
             }
-
+            
             case "REGISTER":
             {
-                client.publish(outgoing[1],data);
+                client.publish(outgoing[1],message);
 
                 break;
             }
