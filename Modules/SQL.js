@@ -261,9 +261,9 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
   if(WHERE)
   {
     if(TAB == "TAGS")
-      Q += "WHERE TAG = '" + WHERE + "'";
+      Q += " WHERE TAG = '" + WHERE + "'";
     else
-      Q += "WHERE ID = " + WHERE.toString();
+      Q += " WHERE ID = " + WHERE.toString();
   }
   
   try
