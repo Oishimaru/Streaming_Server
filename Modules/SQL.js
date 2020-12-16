@@ -266,6 +266,8 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
       Q += " WHERE ID = " + WHERE.toString();
   }
   
+  console.log("SELECT " + S + " FROM " + Q + ";");
+  
   try
   {
     let [result,fields] = await DB.promise().query("SELECT " + S +  " FROM " + Q + ";");
