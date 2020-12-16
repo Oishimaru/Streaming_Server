@@ -224,7 +224,7 @@ async function portUnassign(port,DB,s)
 
 /*SELECT QUERY*/
 
-module.exports.SEL = async function SEL(S,TAB,WHERE)
+module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
 {  
   let DB = DBconnection();
   
@@ -258,16 +258,16 @@ module.exports.SEL = async function SEL(S,TAB,WHERE)
 
   let Q = TAB;
 
-  if(WHERE)
+  if(PARAM && WHERE)
   {
-    if(TAB == "TAGS")
-      Q += " WHERE TAG = '" + WHERE + "'";
+    if(STR)
+      Q += " WHERE " + PARAM + " = '" + WHERE + "'";
     else
-      Q += " WHERE ID = " + WHERE.toString();
+      Q += " WHERE " + PARAM + " = " + WHERE;
   }
-  
+   
   console.log("SELECT " + S + " FROM " + Q + ";");
-  
+
   try
   {
     let [result,fields] = await DB.promise().query("SELECT " + S +  " FROM " + Q + ";");
@@ -490,9 +490,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
     case "TAGS":
     {
-      q2 = " TAG = '" + COL.FIELD1 + "', SONG_ID = " + COL.FIELD2 + " ";
+      q2 = " SONG_ID = " + COL.FIELD1;
 
-      q3 = "WHERE ID = " + COL.FIELD3 + ";";
+      q3 = " WHERE ID = " + COL.FIELD2 + ";";
 
       break;
     }
@@ -525,8 +525,6 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       break;
     }
   }
-
-
 
   let Q =  q1 + q2 + q3;
 
@@ -614,7 +612,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   {
     try
     {
-      query = await SEL("*",TAB,WHERE);
+      query = await SEL("*",TAB,"ID", WHERE, false);
     }
     catch(error) //sql-error12
     { 

@@ -27,7 +27,7 @@ const core = require('./Modules/media-core.js');
 
 var port = [3400,3401,3402,3403,3404,3405,3406,3407,3408,3409,3410];
 
-var apport = 8081;
+var apport = 8080;
 
 var app  = [];
 
@@ -186,7 +186,7 @@ async function createServers(n)
 {
     listener = express();
 
-    serv = listener.listen(8080, (error) => 
+    serv = listener.listen(apport, (error) => 
     { 
         hash("STREAMING: HTTP SOCKTES","*");
     
@@ -468,7 +468,7 @@ function newSubscription(device,id)
 
 async function initSubs()
 {
-    let tab = await SQL.SEL("*","ROOMS","");
+    let tab = await SQL.SEL("*","ROOMS","","",false);
 
     let len = Object.keys(tab).length;
 
@@ -554,6 +554,8 @@ client.on("message", (topic, message) =>
 
     let ID = topic.split('/');
 
+    let log;
+
     let data;
     
     try
@@ -604,19 +606,59 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
-                info = true;
-
-                dataStream_R = [];
-                dataStream_S = [];
-                
-                client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
-
-                setTimeout(() =>
+                setImmediate(() => 
                 {
-                    info = false;
-                    client.publish(outgoing[1], JSON.stringify(dataStream_R.concat(dataStream_S)))
-                },5000);
+                    log = await SQL.SEL("*","ROOMS","","",false);
+
+                    info = true;
+
+                    dataStream_R = [];
+                    dataStream_S = [];
                 
+                    client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
+
+                    setTimeout(() =>
+                    {
+                        info = false;
+
+                        if(log[0] && !log.STATUS)
+                        {
+                            for(let j = 0; j < Object.keys(dataStream_R).length;j++)
+                            {
+                                for(let i = 0; i < Object.keys(log).length; i++)
+                                {
+                                    if(dataStream_R[j] == log[i].READER_ID)
+                                    {
+                                        dataStream_R[j].STATUS = "ASSIGNED";
+                                        dataStream_R[j].ROOM = log[i].ROOM_NAME;
+                                    }  
+                                    else
+                                        dataStream_R[j].STATUS = "UNASSIGNED"; 
+                                }
+                            }
+
+                            for(let j = 0; j < Object.keys(dataStream_S).length;j++)
+                            {
+                                for(let i = 0; i < Object.keys(log).length; i++)
+                                {
+                                    if(dataStream_S[j] == log[i].SPEAKER_ID)
+                                    {
+                                        dataStream_S[j].STATUS = "ASSIGNED";
+                                        dataStream_S[j].ROOM = log[i].ROOM_NAME;
+                                    }  
+                                    else
+                                        dataStream_S[j].STATUS = "UNASSIGNED"; 
+                                }
+                            }
+
+                        }
+                    
+                        client.publish(outgoing[1], JSON.stringify(dataStream_R.concat(dataStream_S)))
+                    
+                    },5000);
+            
+                });  
+
                 break;
             }
         }
@@ -634,7 +676,27 @@ client.on("message", (topic, message) =>
 
                     if(TOKEN && data.TOKEN == TOKEN)
                     {
-                        let Q = await SQL.SEL("*", data.TARGET, data.FIELD1);
+                        let aux = data.FIELD1,param = "ID",str = false;
+
+                        if(data.TARGET == "TAGS")
+                        {
+                            if(data.FIELD2)
+                            {
+                                aux = data.FIELD2;
+
+                                param = "SONG_ID";
+                            }
+                            else
+                            {
+                                param = "TAG";
+                                str = true;
+                            }
+                               
+                        }
+                        
+                            
+
+                        let Q = await SQL.SEL("*", data.TARGET,param,data.FIELD1,str);
                         
                         if(!Q.STATUS)
                         {  
@@ -831,7 +893,7 @@ client.on("message", (topic, message) =>
             
             console.log("ROOMS WHERE READER_ID = '" + READER_ID + "'");
             
-            let Q = await SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","");
+            let Q = await SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","","",false);
             
             console.log(Q);
 
@@ -845,7 +907,7 @@ client.on("message", (topic, message) =>
             {
                 let TAG = data.TAG;
     
-                let Q1 = await SQL.SEL("*","TAGS",TAG);
+                let Q1 = await SQL.SEL("*","TAGS","TAG",TAG,true);
     
                 let Q2;
         
@@ -857,7 +919,7 @@ client.on("message", (topic, message) =>
                 {
                     let SONG_ID = Q1[0].SONG_ID;
         
-                    Q2 = await SQL.SEL("*","MUSIC",SONG_ID);
+                    Q2 = await SQL.SEL("*","MUSIC","ID",SONG_ID,false);
 
                     if(Q2[0] && !Q2.STATUS)
                         file = Q2[0].FL_NAME;
@@ -915,7 +977,7 @@ client.on("message", (topic, message) =>
         {
             let SPEAKER_ID =  ID[1];
 
-            let Q = await SQL.SEL("*","ROOMS WHERE SPEAKER_ID = '" + SPEAKER_ID + "'","");
+            let Q = await SQL.SEL("*","ROOMS WHERE SPEAKER_ID = '" + SPEAKER_ID + "'","","",false);
     
             let index = Q[0].PORT_ID;
     
