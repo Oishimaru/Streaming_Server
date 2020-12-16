@@ -353,9 +353,13 @@ module.exports.INS = async function INS(TAB,COL)
 
     case "TAGS":
     {
+      let today = new Date();
+
+      let ymd = [today.getFullYear().toString(),(today.getMonth() + 1).toString(),today.getDate().toString()];
+
       q2 = " (TAG,SONG_ID,DATE_REG) ";
 
-      q3 =  "VALUES ('" + COL.FIELD1 + "'," + COL.FIELD2 + ",'" + Date.now().toString() + "';";
+      q3 =  "VALUES ('" + COL.FIELD1 + "'," + COL.FIELD2 + ",'" + ymd.join('-') + "');";
 
       break;
     }

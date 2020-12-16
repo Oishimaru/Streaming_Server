@@ -27,9 +27,15 @@ const core = require('./Modules/media-core.js');
 
 var port = [3400,3401,3402,3403,3404,3405,3406,3407,3408,3409,3410];
 
+var apport = 8081;
+
 var app  = [];
 
+var listener;
+
 var server = [];
+
+var serv;
 
 var  httpTerminator = [];
 
@@ -154,7 +160,7 @@ function hash(print,symbol)
     console.log("\x1b[0m");
 }
 
-function createServer(i,first)
+function createServer(i)
 {
     app[i] = express();
 
@@ -162,12 +168,7 @@ function createServer(i,first)
 
     server[i] = app[i].listen(port[i], (error) => 
     {
-        if (first)
-        {
-            hash("STREAMING: HTTP SOCKTES","*");
-    
-            console.log("HTTP Socket Creation...");
-        } 
+        
         if(error)
             errorLog("",error,0); //error0
 
@@ -183,15 +184,42 @@ function createServer(i,first)
 
 async function createServers(n)
 {
-    let first = true;
+    listener = express();
+
+    serv = listener.listen(8080, (error) => 
+    { 
+        hash("STREAMING: HTTP SOCKTES","*");
+    
+        console.log("HTTP Socket Creation...");
+        
+        if(error)
+            errorLog("",error,0); //error0
+
+        console.log("Creating Socket: Listening on port " + apport + ".");
+    });
+
+    listener.get('/audio/:reg/:file/',(req,res) => 
+    {
+        //let T = JSON.parse(JSON.stringify(req.body));
+        
+        if (true)//(TOKEN && T == TOKEN)
+            core.audioMedia(req,res);
+        else if (!TOKEN)
+        {
+            res.status(500).send({STATUS:"LOGIN"});
+        }
+        else
+        {
+            res.status(500).send({STATUS:"INVALID"});
+        }
+    });
+
+    listener.get('*',core.routeError); 
 
     for(let k = 0; k <= n; k++)
     {
-        createServer(k,first);
-
-        first = false;
-    }
-        
+        createServer(k);
+    }       
 }
 /*******************************INITIALIZATION********************************/
 
