@@ -335,6 +335,8 @@ var dataStream_S = [];
 
 var def = "1";
 
+var loaded = false;
+
 var TOKEN = "";
 
 /*********************************FUNCTIONS***********************************/
@@ -432,7 +434,9 @@ async function setDefaultSong(ID)
 
         process.stdout.write("Default Song ID set: ");
         
-        console.log(output);
+        def = data; 
+
+        console.log(data);
 
         output = {"STATUS":"SUCCESS"};
     }
@@ -725,11 +729,8 @@ client.on("message", (topic, message) =>
                             {
                                 param = "TAG";
                                 str = true;
-                            }
-                               
+                            }      
                         }
-                        
-                            
 
                         let Q = await SQL.SEL("*", data.TARGET,param,data.FIELD1,str);
                         
@@ -743,6 +744,11 @@ client.on("message", (topic, message) =>
                                 ST = "\"STATUS\":\"SUCCESS\"";
 
                                 console.log("\n\rList was successfully retrived.\n\r");
+
+                                if(data.TARGET == "MUSIC")
+                                {
+                                    ST +=",\"DEFAULT\":\"" + def + "\""
+                                }
                             }
                             else
                             {
@@ -993,7 +999,17 @@ client.on("message", (topic, message) =>
                     PATH += "/1/" + file;
                 else
                 {
-                    let SONG_ID = await loadFile("default.txt");
+                    
+                    let SONG_ID;
+
+                    if(!loaded)
+                    {
+                        def = await loadFile("default.txt");
+
+                        loaded = true;
+                    }
+                       
+                    SONG_ID = def;
 
                     if(SONG_ID == "0")
                         PATH += "/0/default.mp3";
