@@ -747,6 +747,12 @@ client.on("message", (topic, message) =>
 
                                 if(data.TARGET == "MUSIC")
                                 {
+                                    if(!loaded)
+                                    {
+                                        def = await loadFile("default.txt");
+                                        loaded = true;
+                                    }
+                                    
                                     ST +=",\"DEFAULT\":\"" + def + "\""
                                 }
                             }
