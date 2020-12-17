@@ -864,6 +864,13 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
+                        if(data.TARGET == "MUSIC" && def == data.FIELD1)
+                        {
+                            await setDefaultSong("1");
+
+                            def = "1";
+                        }
+                        
                         Q = JSON.stringify(Q);
 
                         client.publish(outgoing[4],Q);
@@ -978,8 +985,6 @@ client.on("message", (topic, message) =>
     
             let READER_ID =  ID[1];
             
-            console.log("ROOMS WHERE READER_ID = '" + READER_ID + "'");
-            
             let Q = await SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","","",false);
             
             console.log(Q);
@@ -1043,7 +1048,6 @@ client.on("message", (topic, message) =>
                             file = Q2[0].FL_NAME;
 
                             PATH += "/1/" + file;
-
                         }
                         else
                             PATH += "/0/default.mp3";
