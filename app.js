@@ -333,30 +333,19 @@ var info = false;
 var dataStream_R = [];
 var dataStream_S = [];
 
+var def = "1";
+
 var TOKEN = "";
 
 /*********************************FUNCTIONS***********************************/
 
-function length(obj) 
-{
-    let count = 0;
-    
-    for (let p in obj) {
-      obj.hasOwnProperty(p) && count++;
-    }
-    return count; 
-
-}
-
-async function  getCredentials()
+async function  loadFile(filename)
 {
     let readFile = util.promisify(fs.readFile);
 
     let writeFile = util.promisify(fs.writeFile);
 
     let exists = util.promisify(fs.access);
-    
-    let filename = "credentials.txt";
     
     let info;
 
@@ -382,11 +371,24 @@ async function  getCredentials()
     if(e)
         info = (await readFile(filename)).toString();
     else
-    {
-        console.log("Attemting to create " + filename + " with default credentials.");
+    {   
 
+        process.stdout.write("Attemting to create " + filename); 
         
-        let data = {"USER":"APP","PASS":"0R81TT45"};
+        let data;
+
+        if(filename == "credentials.txt")
+        {
+            console.log(" with default credentials.");
+
+            data = {"USER":"APP","PASS":"0R81TT45"};
+        }    
+        else if("default.txt")
+        {
+            console.log(" with default song id.");
+
+            data = {"ID":"1"};
+        }        
 
         data = JSON.stringify(data);
 
@@ -412,6 +414,39 @@ async function  getCredentials()
     return output;   
 }
 
+async function setDefaultSong(ID)
+{
+    let writeFile = util.promisify(fs.writeFile);
+    
+    let filename = "default.txt";
+
+    let output;
+
+    let data = {ID};
+
+    data = JSON.stringify(data);
+
+    try
+    {
+        await writeFile(filename,data);
+
+        process.stdout.write("Default Song ID set: ");
+        
+        console.log(output);
+
+        output = {"STATUS":"SUCCESS"};
+    }
+    catch(error) //error31
+    {
+        errorLoge("",error,31);
+
+        console.log('Unable to set new song ID.')
+        
+        output = {"STATUS":"FAILURE"};
+    }
+   
+    return output;
+}
 async function setCredentials(USER,PASS)
 {
     let writeFile = util.promisify(fs.writeFile);
@@ -596,7 +631,7 @@ client.on("message", (topic, message) =>
               
                 break;
             }
-            
+
             case "REGISTER":
             {
                 client.publish(outgoing[1],message);
@@ -606,7 +641,7 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
-                setImmediate(() => 
+                setImmediate( async () => 
                 {
                     log = await SQL.SEL("*","ROOMS","","",false);
 
@@ -728,8 +763,10 @@ client.on("message", (topic, message) =>
 
                         client.publish(outgoing[4],Q);
                     }
-                    else
+                    else if(!TOKEN)
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                 });
                 
                 break;
@@ -759,8 +796,11 @@ client.on("message", (topic, message) =>
     
                         client.publish(outgoing[4],Q);
                     }
-                    else
+                    else if(!TOKEN)
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+
                 });
                 
                 break;
@@ -781,8 +821,10 @@ client.on("message", (topic, message) =>
     
                         client.publish(outgoing[4],Q);
                     }
-                    else
+                    else if(!TOKEN)
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                 });
                 
                 break;
@@ -803,18 +845,40 @@ client.on("message", (topic, message) =>
 
                         client.publish(outgoing[4],Q);
                     }
-                    else
+                    else if(!TOKEN)
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                 });
                 
                 break;
+            }
+
+            case "DEFAULT":
+            {
+                let output;
+
+                setImmediate( async () =>
+                {
+                    if(TOKEN && data.TOKEN == TOKEN)
+                    {
+                        output = await setDefaultSong(data.ID);
+
+                        client.publish(outgoing[4],JSON.stringify(output));
+                    }
+                    else if(!TOKEN)
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                    
+                });
             }
 
             case "CREDENTIALS":
             {
                 setImmediate( async () =>
                 {
-                    let credentials = await getCredentials();
+                    let credentials = await loadFile("credentials.txt");
 
                     console.log(credentials);
                 
@@ -881,7 +945,7 @@ client.on("message", (topic, message) =>
     }
     else if(ID[0] == "READER")
     {
-        setImmediate(async () => 
+        setImmediate( async () => 
         {
             let HOST = "sdrorbittas.sytes.net";
 
@@ -928,7 +992,30 @@ client.on("message", (topic, message) =>
                 if(file)
                     PATH += "/1/" + file;
                 else
-                    PATH += "/0/default.mp3";
+                {
+                    let SONG_ID = await loadFile("default.txt");
+
+                    if(SONG_ID == "0")
+                        PATH += "/0/default.mp3";
+                    else if(SONG_ID == "1")
+                        PATH += "/0/Rick Rolling.mp3";
+                    else
+                    {
+                        Q2 = await SQL.SEL("*","MUSIC","ID",SONG_ID,false);
+
+                        if(Q2[0] && !Q2.STATUS)
+                        {
+                            file = Q2[0].FL_NAME;
+
+                            PATH += "/1/" + file;
+
+                        }
+                        else
+                            PATH += "/0/default.mp3";
+                            
+                    }
+                }
+                    
     
                 PATH = encodeURI(PATH);
     
@@ -973,7 +1060,7 @@ client.on("message", (topic, message) =>
     else if(ID[0] ==  "SPEAKER")
     {
         
-        setImmediate(async () => 
+        setImmediate( async () => 
         {
             let SPEAKER_ID =  ID[1];
 
