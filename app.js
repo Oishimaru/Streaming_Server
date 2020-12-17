@@ -792,10 +792,10 @@ client.on("message", (topic, message) =>
                     if(TOKEN && data.TOKEN == TOKEN)
                     {
                         let Q = await SQL.INS(data.TARGET, data);
-    
+                  
                         if(!Q.STATUS)
                         {
-                            Q = {"STATUS":"SUCCESS"};
+                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
                             
                             if(data.TARGET == "ROOMS")
                             {
@@ -804,6 +804,8 @@ client.on("message", (topic, message) =>
                                 newSubscription("SPEAKER",data.FIELD3);
                             }     
                         }
+                        else
+                            Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
                         Q = JSON.stringify(Q);
     
@@ -828,7 +830,9 @@ client.on("message", (topic, message) =>
                         let Q = await SQL.UPDT(data.TARGET, data);
 
                         if(!Q.STATUS)
-                            Q = {"STATUS":"SUCCESS"};
+                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                        else
+                            Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
                         Q = JSON.stringify(Q);
     
@@ -852,7 +856,9 @@ client.on("message", (topic, message) =>
                         let Q = await SQL.DEL(data.TARGET, data.FIELD1);
 
                         if(!Q.STATUS)
-                            Q = {"STATUS":"SUCCESS"};
+                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                        else
+                            Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
                         Q = JSON.stringify(Q);
 
