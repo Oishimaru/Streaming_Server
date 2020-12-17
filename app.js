@@ -751,6 +751,9 @@ client.on("message", (topic, message) =>
                                     if(!loaded)
                                     {
                                         def = await loadFile("default.txt");
+
+                                        def = def.ID;
+
                                         loaded = true;
                                     }
 
@@ -1019,6 +1022,8 @@ client.on("message", (topic, message) =>
                     {
                         def = await loadFile("default.txt");
 
+                        def = def.ID;
+                        
                         loaded = true;
                     }
                        
