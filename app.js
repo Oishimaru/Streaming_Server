@@ -726,14 +726,15 @@ client.on("message", (topic, message) =>
 
                                 param = "SONG_ID";
                             }
-                            else
+                            else if (data.FIELD1)
                             {
                                 param = "TAG";
                                 str = true;
-                            }      
+                            }  
+                    
                         }
 
-                        let Q = await SQL.SEL("*", data.TARGET,param,data.FIELD1,str);
+                        let Q = await SQL.SEL("*", data.TARGET,param,aux,str);
                         
                         if(!Q.STATUS)
                         {  
@@ -1023,7 +1024,7 @@ client.on("message", (topic, message) =>
                         def = await loadFile("default.txt");
 
                         def = def.ID;
-                        
+
                         loaded = true;
                     }
                        
