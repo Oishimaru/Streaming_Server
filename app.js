@@ -314,6 +314,7 @@ const incoming  = [
                     "APP/POST",
                     "APP/UPDATE",
                     "APP/DELETE",
+                    "APP/DEFAULT",
                     "READER/",
                     "SPEAKER/",
                     "TEST/INIT"
@@ -752,7 +753,7 @@ client.on("message", (topic, message) =>
                                         def = await loadFile("default.txt");
                                         loaded = true;
                                     }
-                                    
+
                                     ST +=",\"DEFAULT\":\"" + def + "\""
                                 }
                             }
