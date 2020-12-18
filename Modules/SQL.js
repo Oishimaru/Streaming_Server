@@ -540,12 +540,13 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       
       console.log(r);
 
-      let prev = oldfile[0].FL_NAME;
-
-      let nw  = COL.FIELD3;
 
       if(TAB == "MUSIC")
       {
+        let prev = oldfile[0].FL_NAME;
+
+        let nw  = COL.FIELD3;
+
         if(prev != nw)
         {
           let rename = util.promisify(fs.rename);
