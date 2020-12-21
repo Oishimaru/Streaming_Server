@@ -669,11 +669,16 @@ client.on("message", (topic, message) =>
                     {
                         info = false;
 
-                        if(log[0] && !log.STATUS)
+                        if(!log.STATUS)
                         {
+                            let  len = Object.keys(log).length;
+
                             for(let j = 0; j < Object.keys(dataStream_R).length;j++)
                             {
-                                for(let i = 0; i < Object.keys(log).length; i++)
+                                if(len == 0)
+                                    dataStream_R[j].STATUS = "UNASSIGNED";
+                                
+                                for(let i = 0; i < len; i++)
                                 {
                                     if(dataStream_R[j] == log[i].READER_ID)
                                     {
@@ -683,10 +688,17 @@ client.on("message", (topic, message) =>
                                     else
                                         dataStream_R[j].STATUS = "UNASSIGNED"; 
                                 }
+
+                                
+                                
                             }
 
                             for(let j = 0; j < Object.keys(dataStream_S).length;j++)
                             {
+
+                                if(len == 0)
+                                    dataStream_S[j].STATUS = "UNASSIGNED";
+
                                 for(let i = 0; i < Object.keys(log).length; i++)
                                 {
                                     if(dataStream_S[j] == log[i].SPEAKER_ID)
@@ -705,7 +717,9 @@ client.on("message", (topic, message) =>
                         
                         let ST;
 
-                        if(conc[0])
+                        if(log.STATUS)
+                            ST = "\"STATUS\":\"DATABASE ERROR\",\"MESSAGE\":" + JSON.stringify(log);
+                        else if(conc[0])
                             ST = "\"STATUS\":\"SUCCESS\"";
                         else
                             ST = "\"STATUS\":\"EMPTY\"";
@@ -755,11 +769,10 @@ client.on("message", (topic, message) =>
 
                         let Q = await SQL.SEL("*", data.TARGET,param,aux,str);
                         
+                        let ST = "";
+
                         if(!Q.STATUS)
                         {  
-
-                            let ST = "";
-
                             if(Q[0])
                             {
                                 ST = "\"STATUS\":\"SUCCESS\"";
@@ -795,7 +808,12 @@ client.on("message", (topic, message) =>
                             Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
                         }  
                         else
-                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "}";
+                        {
+                            ST = "\"STATUS\":\"FAILURE\",\"MESSAGE\":" + JSON.stringify(Q);
+                            
+                            Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
+                        }
+                            
 
                         client.publish(outgoing[4],Q);
                     }
