@@ -700,8 +700,19 @@ client.on("message", (topic, message) =>
                             }
 
                         }
-                    
-                        client.publish(outgoing[1], JSON.stringify(dataStream_R.concat(dataStream_S)))
+                        
+                        let conc = dataStream_R.concat(dataStream_S);
+                        
+                        let ST;
+
+                        if(conc[0])
+                            ST = "\"STATUS\":\"SUCCESS\"";
+                        else
+                            ST = "\"STATUS\":\"EMPTY\"";
+                            
+                        let response = "{\"DEVICES\":" + JSON.stringify(conc) + "," + ST + "}";
+               
+                        client.publish(outgoing[1],response);
                     
                     },5000);
             
