@@ -613,7 +613,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   {
     try
     {
-      query = await SEL("*",TAB,"ID", WHERE, false);
+      query = await module.exports.SEL("*",TAB,"ID", WHERE, false);
     }
     catch(error) //sql-error12
     { 
