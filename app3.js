@@ -386,7 +386,7 @@ async function  loadFile(filename)
 
             data = {"USER":"APP","PASS":"0R81TT45"};
         }    
-        else if("default.txt")
+        else if(filename == "default.txt")
         {
             console.log(" with default song id.");
 
@@ -427,11 +427,11 @@ async function setDefaultSong(ID)
 
     let data = {ID};
 
-    data = JSON.stringify(data);
+    let info = JSON.stringify(data);
 
     try
     {
-        await writeFile(filename,data);
+        await writeFile(filename,info);
 
         process.stdout.write("Default Song ID set: ");
         
@@ -443,7 +443,7 @@ async function setDefaultSong(ID)
     }
     catch(error) //error31
     {
-        errorLoge("",error,31);
+        errorLog("",error,31);
 
         console.log('Unable to set new song ID.')
         
