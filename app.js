@@ -435,7 +435,7 @@ async function setDefaultSong(ID)
 
         process.stdout.write("Default Song ID set: ");
         
-        def = data; 
+        def = data.ID; 
 
         console.log(data);
 
@@ -1000,7 +1000,7 @@ client.on("message", (topic, message) =>
     {
         setImmediate( async () => 
         {
-            let HOST = "sdrorbittas.sytes.net";
+            let HOST = "192.168.0.103";
 
             let PORT;
 
