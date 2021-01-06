@@ -1389,6 +1389,8 @@ up.post('/upload-audio', async (req, res) =>
 
 process.on('uncaughtException',  async (error) =>
 {
+    console.log("error");
+    
     await errorLog("Uncaught-Exception",error,0);
 
     process.exit();
