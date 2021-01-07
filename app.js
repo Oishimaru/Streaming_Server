@@ -492,9 +492,9 @@ function newSubscription(device,id)
 {
     
     if(device == "READER")
-        device = incoming[9] + id;
-    else if(device == "SPEAKER")
         device = incoming[10] + id;
+    else if(device == "SPEAKER")
+        device = incoming[11] + id;
 
     client.subscribe(device, (error,granted) => 
     {
