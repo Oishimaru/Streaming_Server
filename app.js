@@ -1058,9 +1058,9 @@ client.on("message", (topic, message) =>
                        
                     SONG_ID = def;
 
-                    if(SONG_ID == "0")
+                    if(SONG_ID == "1")
                         PATH += "/0/default.mp3";
-                    else if(SONG_ID == "1")
+                    else if(SONG_ID == "2")
                         PATH += "/0/Rick Rolling.mp3";
                     else
                     {
