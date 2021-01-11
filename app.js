@@ -1092,11 +1092,15 @@ client.on("message", (topic, message) =>
                 client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
                 
                 console.log("[" + outgoing[2] + + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                
                 console.log("Trying again in 5 seconds...");
+                
                 play[index] = setTimeout(() =>
                 {
                     client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}))
+                    
                     console.log("Last try...");
+                    
                     console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
                 },5000);
             
@@ -1105,16 +1109,23 @@ client.on("message", (topic, message) =>
             {
                 client.publish(outgoing[2] + SPEAKER_ID, JSON.stringify(data));
     
-                timer[index] = setTimeout( () =>
+                timer[index] = setTimeout( async () =>
                 {
-                    httpTerminator[index].terminate();
+                    await httpTerminator[index].terminate();
 
                     console.log("connection terminated.");
                     
-                    subtimer[index] = setTimeout(createServer(index),5000);
+                    subtimer[index] = setTimeout( () =>
+                    { 
+                        console.log("Attempting to re-open socket.");
+                       
+                        createServer(index);
                     
+                    }, 5000);
                     
-                },5000);
+                    console.log("Socket will be re-opened in 5 seconds");
+                    
+                }, 5000);
             }
 
         });
