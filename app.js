@@ -1315,8 +1315,8 @@ up.post('/upload-audio', async (req, res) =>
                 {
                     let l = f.length;
 
-                    if(f.length >= 29)
-                        file = filename.slice(0,4) + ".weird";
+                    if(f[l-1].length >= 29)
+                        file = filename.slice(0,25) + ".weird";
                     else
                         file = filename.slice(0,29 - f[l-1].length) + "." + f[l-1];
 
