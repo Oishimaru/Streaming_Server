@@ -624,6 +624,22 @@ module.exports.DEL = async function DEL(TAB,WHERE)
       r.STATUS = error;
     }
   }  
+  else if(TAB == "MUSIC")
+  {
+    try
+    {
+      query = await module.exports.SEL("FL_NAME",TAB,"ID", WHERE, false);
+    }
+    catch(error) //sql-error12
+    { 
+      errorLog("sql",error,14);
+  
+      r = {};
+  
+      r.STATUS = error;
+    }
+  }  
+
 
   if(r.STATUS)
     return r;
@@ -640,6 +656,20 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     {
       if(query[0] && !query.STATUS)
         await portUnassign(query[0].PORT_ID,DB,r);
+    }
+    else if(TAB == "MUSIC")
+    {
+       let del = util.promisify(fs.unlink);
+
+       if(query[0] && !query.STATUS)
+       {
+          console.log("Attempting to delete file "+ query[0].FL_NAME)
+
+          await del("./files/music/" + query[0].FL_NAME);
+
+          console.log(query[0].FL_NAME + " successfully deleted.")
+       }
+         
     }
 
     r = JSON.parse(JSON.stringify(result));
