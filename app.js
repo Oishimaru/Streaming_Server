@@ -1400,9 +1400,28 @@ up.post('/upload-audio', async (req, res) =>
 
 process.on('uncaughtException',  async (error) =>
 {
-    console.log("error");
-    
-    await errorLog("Uncaught-Exception",error,0);
+    console.log("Uncaught Exception");
+
+    if(typeof error == 'object')
+    {
+        let e;
+
+        if(error.message)
+        {
+            e = error.message.toString();
+
+            if(error.stack)
+            {
+                e += " @"  + error.stack.toString();
+            }
+        }
+        else
+            e = error;
+
+        await errorLog("Uncaught-Exception",e,0);
+    }
+    else
+        await errorLog("Uncaught-Exception",error,0); 
 
     process.exit();
 });
