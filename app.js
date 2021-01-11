@@ -1091,7 +1091,7 @@ client.on("message", (topic, message) =>
                 */
                 client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
                 
-                console.log("[" + outgoing[2] + + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                console.log("[" + outgoing[2]  + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
                 
                 console.log("Trying again in 5 seconds...");
                 
