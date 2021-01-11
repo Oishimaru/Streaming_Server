@@ -1305,13 +1305,30 @@ up.post('/upload-audio', async (req, res) =>
                 
                 let path = "./files/music/";
             
-                let file = audio.name;
+                let filename = auddio.name;
+
+                let file;
                 
-                let f = file.split('.');
-            
+                let f = filename.split('.');
+
+                if(filename.length > 30)
+                {
+                    let l = f.length;
+
+                    if(f.length >= 29)
+                        file = filename.slice(0,4) + ".weird";
+                    else
+                        file = filename.slice(0,29 - f[l-1].length) + "." + f[l-1];
+
+                    f = filename.split('.');
+                }
+                else
+                    file = filename;
+                
                 let dots = f.length;
 
                 f[dots] = f[dots - 1];
+                
                 f[dots - 1] = "";
         
                 let exists = util.promisify(fs.access);
@@ -1319,6 +1336,7 @@ up.post('/upload-audio', async (req, res) =>
                 let save = util.promisify(audio.mv);
                 
                 console.log(req);
+                
                 while(flag)
                 {
                     file = f.join('.');
