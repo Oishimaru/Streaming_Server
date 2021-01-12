@@ -1320,7 +1320,7 @@ up.post('/upload-audio', async (req, res) =>
                     else
                         file = filename.slice(0,29 - f[l-1].length) + "." + f[l-1];
 
-                    f = filename.split('.');
+                    f = file.split('.');
                 }
                 else
                     file = filename;
