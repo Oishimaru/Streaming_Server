@@ -1305,7 +1305,7 @@ up.post('/upload-audio', async (req, res) =>
                 
                 let path = "./files/music/";
             
-                let filename = auddio.name;
+                let filename = audio.name;
 
                 let file;
                 
