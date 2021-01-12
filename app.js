@@ -1307,18 +1307,20 @@ up.post('/upload-audio', async (req, res) =>
             
                 let filename = audio.name;
 
+                filename = filename.replace(/ /g,'_');
+
                 let file;
                 
                 let f = filename.split('.');
 
-                if(filename.length > 30)
+                if(filename.length > 26)
                 {
                     let l = f.length;
 
-                    if(f[l-1].length >= 29)
-                        file = filename.slice(0,25) + ".weird";
+                    if(f[l-1].length >= 25)
+                        file = filename.slice(0,22) + ".weird";
                     else
-                        file = filename.slice(0,29 - f[l-1].length) + "." + f[l-1];
+                        file = filename.slice(0,25 - f[l-1].length) + "." + f[l-1];
 
                     f = file.split('.');
                 }
