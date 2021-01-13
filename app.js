@@ -376,7 +376,7 @@ async function  loadFile(filename)
     else
     {   
 
-        process.stdout.write("Attemting to create " + filename); 
+        process.stdout.write("Attempting to create " + filename); 
         
         let data;
 
@@ -834,6 +834,12 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
+                        console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                        process.stdout.write("MESSAGE: ");
+
+                        console.log(Q);
+                        
                         Q = JSON.stringify(Q);
     
                         client.publish(outgoing[4],Q);
@@ -861,8 +867,14 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
+                        console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                        process.stdout.write("MESSAGE: ");
+
+                        console.log(Q);
+                        
                         Q = JSON.stringify(Q);
-    
+                        
                         client.publish(outgoing[4],Q);
                     }
                     else if(!TOKEN)
@@ -880,23 +892,52 @@ client.on("message", (topic, message) =>
                 {
                     if(TOKEN && data.TOKEN == TOKEN)
                     {  
-                        let Q = await SQL.DEL(data.TARGET, data.FIELD1);
-
-                        if(!Q.STATUS)
-                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
-                        else
-                            Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
-                        if(data.TARGET == "MUSIC" && def == data.FIELD1)
-                        {
-                            await setDefaultSong("1");
+                        let id = data.FIELD1;
 
-                            def = "1";
+                        let Q;
+
+                        if( !(data.TARGET == "MUSIC" && (id == "1" || id == "2") ) )
+                        {
+                            Q = await SQL.DEL(data.TARGET, id);
+
+                            if(!Q.STATUS)
+                                Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                            else
+                                Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
+                        
+                            if(data.TARGET == "MUSIC" && def == data.FIELD1)
+                            {
+                                await setDefaultSong("1");
+
+                                def = "1";
+                            }
+                            
+                            console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                            process.stdout.write("MESSAGE: ");
+
+                            console.log(Q);
+
+                            Q = JSON.stringify(Q);
+
+                            client.publish(outgoing[4],Q);    
+                        }
+                        else
+                        {
+                            Q = {"STATUS":"UNDELETABLE","MESSAGE":"Attempted to delete " + data.TARGET + "of id " + id};
+
+                            console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                            process.stdout.write("MESSAGE: ");
+
+                            console.log(Q);
+
+                            Q = JSON.stringify(Q);
+
+                            client.publish(outgoing[4],Q);  
                         }
                         
-                        Q = JSON.stringify(Q);
-
-                        client.publish(outgoing[4],Q);
                     }
                     else if(!TOKEN)
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
@@ -1210,6 +1251,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const _ = require('lodash');
+const { random } = require('lodash');
+const { Console } = require('console');
 
 /*************************VARIABLES AND INSTANCES*****************************/
 
@@ -1281,17 +1324,26 @@ up.post('/upload-audio', async (req, res) =>
     {
         if(!req.files) 
         {
-            res.send(
+            res.status(400).send(
             {
-                status: false,
-                message: 'No file uploaded'
+                STATUS: "BAD REQUEST",
+                REQUEST: "NO FILE UPLOADED"
             });
         } 
         else 
         {
             let details = JSON.parse(req.body.details);
             
-    
+            if(details.key && details.key == "hazard")
+            {
+                if(!TOKEN)
+                    TOKEN = randomToken(16);
+
+                details.TOKEN = TOKEN;
+            }
+            
+            console.log(req);
+
             if(TOKEN && details.TOKEN == TOKEN)
             {
                 //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
@@ -1305,10 +1357,14 @@ up.post('/upload-audio', async (req, res) =>
                 
                 let path = "./files/music/";
             
-                let filename = audio.name;
+                let filename = details.filename;
+                
+                console.log(filename);
 
                 filename = filename.replace(/ /g,'_');
 
+                console.log(filename);
+                
                 let file;
                 
                 let f = filename.split('.');
@@ -1322,6 +1378,8 @@ up.post('/upload-audio', async (req, res) =>
                     else
                         file = filename.slice(0,25 - f[l-1].length) + "." + f[l-1];
 
+                    console.log(file);
+
                     f = file.split('.');
                 }
                 else
@@ -1333,79 +1391,97 @@ up.post('/upload-audio', async (req, res) =>
                 
                 f[dots - 1] = "";
         
-                let exists = util.promisify(fs.access);
-
-                let save = util.promisify(audio.mv);
+                let extension = f[dots];       
                 
-                console.log(req);
-                
-                while(flag)
+                if(extension == "mp3")
                 {
-                    file = f.join('.');
+                    let exists = util.promisify(fs.access);
 
-                    file = charRemove(file,'.',dots);
+                    let save = util.promisify(audio.mv);
 
-                    try
+                    while(flag)
                     {
-                        await exists(path + file, fs.F_OK); 
+                        file = f.join('.');
 
-                        console.log(n.toString() + ". File exists. ");
+                        file = charRemove(file,'.',dots);
 
-                        n++;
+                        try
+                        {
+                            await exists(path + file, fs.F_OK); 
 
-                        f[dots - 1] = "("+n.toString()+")";
-                    }
-                    catch(error)
-                    {
-                        console.log("Saving " + file);
+                            console.log(n.toString() + ". File exists. ");
 
-                        await save(path + file);
+                            n++;
 
-                        console.log(file + " saved.");
+                            f[dots - 1] = "("+n.toString()+")";
+                        }
+                        catch(error)
+                        {
+                            console.log("Saving " + file);
 
-                        let dt = {};
+                            await save(path + file);
 
-                        dt.FIELD1 = details.song;
+                            console.log(file + " saved.");
 
-                        dt.FIELD2 = details.artist;
+                            let dt = {};
 
-                        dt.FIELD3 = file;
+                            dt.FIELD1 = details.song;
 
-                        Q = await SQL.INS("MUSIC", dt);
+                            dt.FIELD2 = details.artist;
+
+                            dt.FIELD3 = file;
+
+                            Q = await SQL.INS("MUSIC", dt);
     
-                        if(!Q.STATUS)
-                            Q = "Succeeded on modifying database.";
-                        else
-                            Q = "Failed to modify database";
+                            if(!Q.STATUS)
+                                Q = "SUCCEEDED ON MODIFYING DATABASE.";
+                            else
+                                Q = "FAILED TO MODIFY DATABASE.";
 
-                        flag = false;
-                    }
+                            flag = false;
+                        }
                 
-                }
-            
-            //send response
-                res.send(
-                {
-                    MESSAGE: 'File was successfully uploaded',
-                    
-                    STATUS: Q,
-
-                    DATA: 
-                    {
-                        NAME: file,
-                        MIMETYPE: audio.mimetype,
-                        SIZE: audio.size
                     }
+                    
+                    
+                    //send response
+                    res.status(200).send(
+                    {
+                        STATUS: Q,
 
-                });
+                        MESSAGE: 'File was successfully uploaded',
+                        
+                        DATA: 
+                        {
+                            NAME: file,
+                            MIMETYPE: audio.mimetype,
+                            SIZE: audio.size
+                        }
+                    });
+                }
+                else
+                {
+                    console.log("Bad request; please upload .mp3 files only.");
+
+                    res.status(400).send(
+                    {
+                        STATUS:"BAD REQUEST", 
+                        
+                        MESSAGE: "PLEASE UPLOAD .mp3 FILES ONLY."
+                    });
+                }
             }
             else if (!TOKEN)
             {
-                res.status(500).send({STATUS:"LOGIN"});
+                console.log("No Token has been generated; please log in.");
+
+                res.status(401).send({STATUS:"LOGIN"});
             }
             else
             {
-                res.status(500).send({STATUS:"INVALID"});
+                console.log("Invalid Token.");
+
+                res.status(401).send({STATUS:"INVALID"});
             }
         }
     } 

@@ -11,6 +11,7 @@ const mysql = require('mysql2');
 const fs = require('fs');
 
 const util = require('util');
+const { Console } = require('console');
 
 /*********************************FUNCTIONS***********************************/
 
@@ -651,6 +652,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   try
   {
     let result = await DB.promise().query("DELETE FROM " + Q + ";");
+    let message = "";
 
     if(TAB == "ROOMS")
     {
@@ -661,13 +663,31 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     {
        let del = util.promisify(fs.unlink);
 
+       let exists = util.promisify(fs.access);
+
        if(query[0] && !query.STATUS)
        {
           console.log("Attempting to delete file "+ query[0].FL_NAME)
 
-          await del("./files/music/" + query[0].FL_NAME);
+          try
+          {
+            await exists("./files/music/" + query[0].FL_NAME);
 
-          console.log(query[0].FL_NAME + " successfully deleted.")
+            await del("./files/music/" + query[0].FL_NAME);
+
+            console.log(query[0].FL_NAME + " successfully deleted.")
+
+          }
+          catch(error)
+          {
+            console.log(error);
+
+            message = "SUCCEEDED IN DELETING DATABASE ENTRY BUT NOT FILE";
+
+          }
+          
+
+   
        }
          
     }
