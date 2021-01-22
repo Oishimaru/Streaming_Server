@@ -11,7 +11,6 @@ const mysql = require('mysql2');
 const fs = require('fs');
 
 const util = require('util');
-const { Console } = require('console');
 
 /*********************************FUNCTIONS***********************************/
 
@@ -338,7 +337,7 @@ module.exports.INS = async function INS(TAB,COL)
   {
     case "ROOMS":
     {
-      q2  = " (ROOM_NAME,READER_ID,SPEAKER_ID,PORT_ID) ";
+      q2  = " (ROOM_NAME,READER_ID,SPEAKER_ID,READER_NAME,SPEAKER_NAME,PORT_ID) ";
 
       port = await portAvailable(DB,r);   
       
@@ -349,7 +348,7 @@ module.exports.INS = async function INS(TAB,COL)
         return port;
       }
         
-      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "'," + port.toString() + ");";
+      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','"  + COL.FIELD3 + "','"  + COL.FIELD4 + "','"  + COL.FIELD5 + "'," + port.toString() + ");";
       
       break;
     }
@@ -482,9 +481,10 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   {
     case "ROOMS":
     {
-      q2  = " ROOM_NAME = '"+ COL.FIELD1 +"', READER_ID = '"+ COL.FIELD2 +"', SPEAKER_ID = '" + COL.FIELD3 + "' ";
+      q2  = " ROOM_NAME = '" + COL.FIELD1 + "', READER_ID = '" + COL.FIELD2 + "', SPEAKER_ID = '" + COL.FIELD3 +
+            "', READER_NAME= '" + COL.FIELD4 + "', SPEAKER_NAME = '" + COL.FIELD5 + "' ";
       
-      q3 = "WHERE ID = " + COL.FIELD4 + ";";
+      q3 = "WHERE ID = " + COL.FIELD6 + ";";
 
       break;
     }

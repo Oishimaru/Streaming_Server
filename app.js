@@ -1391,7 +1391,9 @@ up.post('/upload-audio', async (req, res) =>
                 
                 f[dots - 1] = "";
         
-                let extension = f[dots];       
+                let extension = "";
+                
+                extension = f[dots];       
                 
                 if(extension == "mp3")
                 {
