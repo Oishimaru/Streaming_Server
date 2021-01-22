@@ -124,11 +124,14 @@ async function errorLog(prefix,error,num)
 }
 
 
-function rainCheck()
+function rainCheck(i)
 {
-    readiness++;
+    readiness+=i;
 
-    if(readiness >= 6)
+    process.stdout.write("Readinesms Check: ");
+    console.log(readiness);
+
+    if(readiness >= 7)
     {
         console.log("Server is up!"); //set off alarm
     }
@@ -229,7 +232,7 @@ try
     {
         await  createServers(10);
 
-        rainCheck();
+        rainCheck(1);
 
         console.log("All sockets created succesfully.");
     });
@@ -270,7 +273,7 @@ broker.listen(nsport, () =>
 
     console.log('Aedes (MQTT netSocket) listening on port ', nsport);
     
-    rainCheck();
+    rainCheck(1);
 });
 
 /*WEBSOCKET SERVER*/
@@ -282,7 +285,7 @@ httpServer.listen(wsPort,  () =>
     console.log('Aedes (MQTT Web-socket) listening on port: ' + wsPort);
     aedes.publish({ topic: 'aedes/hello', payload: "I'm broker " + aedes.id });
 
-    rainCheck();
+    rainCheck(1);
 });
 
 /*******************************************************************************
@@ -513,7 +516,12 @@ async function initSubs()
     let len = Object.keys(tab).length;
 
     if(!len)
-        rainCheck();
+    {
+        console.log("No Rooms Registered");
+
+        rainCheck(2);
+    }
+       
 
     console.log("Connected to broker on port " + nsport + ".");
 
@@ -526,7 +534,13 @@ async function initSubs()
             if(error) //error5
                 errorLog("",error,5)
             else if(granted)
+            {
                 console.log(granted);
+
+                if(k >= (incoming.length - 1))
+                    rainCheck(1);
+            }
+                
         });
     }
 
@@ -549,7 +563,7 @@ async function initSubs()
                 console.log(granted);
                 
                 if(l >= (len - 1))
-                    rainCheck();
+                    rainCheck(1);
             }
           
         });
@@ -563,7 +577,7 @@ async function initSubs()
                 console.log(granted);
                 
                 if(l >= (len - 1))
-                    rainCheck();
+                    rainCheck(1);
             }
         });
 
@@ -654,7 +668,21 @@ client.on("message", (topic, message) =>
 
                     dataStream_R = [];
                     dataStream_S = [];
-                
+
+                    /*
+                    dataStream_R = [
+                                        {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
+                                        {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
+                                        {"NAME":"RD3","CHIP_ID":"BL33P","TYPE":"READER"}
+                                   ];
+
+                    dataStream_S = [
+                                        {"NAME":"SP1","CHIP_ID":"B00P","TYPE":"SPEAKER"},
+                                        {"NAME":"SP2","CHIP_ID":"M00P","TYPE":"SPEAKER"},
+                                        {"NAME":"SP3","CHIP_ID":"BL00P","TYPE":"SPEAKER"}
+                                   ];
+                    */
+                   
                     client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
 
                     setTimeout(() =>
@@ -1311,7 +1339,7 @@ up.listen(uport, (error) =>
     {
         console.log(`App is listening on port ${uport}.`)
 
-        rainCheck();
+        rainCheck(1);
     }
     
 });

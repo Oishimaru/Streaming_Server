@@ -124,11 +124,14 @@ async function errorLog(prefix,error,num)
 }
 
 
-function rainCheck()
+function rainCheck(i)
 {
-    readiness++;
+    readiness+=i;
 
-    if(readiness >= 6)
+    process.stdout.write("Readinesms Check: ");
+    console.log(readiness);
+
+    if(readiness >= 7)
     {
         console.log("Server is up!"); //set off alarm
     }
@@ -229,7 +232,7 @@ try
     {
         await  createServers(10);
 
-        rainCheck();
+        rainCheck(1);
 
         console.log("All sockets created succesfully.");
     });
@@ -270,7 +273,7 @@ broker.listen(nsport, () =>
 
     console.log('Aedes (MQTT netSocket) listening on port ', nsport);
     
-    rainCheck();
+    rainCheck(1);
 });
 
 /*WEBSOCKET SERVER*/
@@ -282,7 +285,7 @@ httpServer.listen(wsPort,  () =>
     console.log('Aedes (MQTT Web-socket) listening on port: ' + wsPort);
     aedes.publish({ topic: 'aedes/hello', payload: "I'm broker " + aedes.id });
 
-    rainCheck();
+    rainCheck(1);
 });
 
 /*******************************************************************************
@@ -376,7 +379,7 @@ async function  loadFile(filename)
     else
     {   
 
-        process.stdout.write("Attemting to create " + filename); 
+        process.stdout.write("Attempting to create " + filename); 
         
         let data;
 
@@ -443,7 +446,7 @@ async function setDefaultSong(ID)
     }
     catch(error) //error31
     {
-        errorLog("",error,31);
+        errorLoge("",error,31);
 
         console.log('Unable to set new song ID.')
         
@@ -492,9 +495,9 @@ function newSubscription(device,id)
 {
     
     if(device == "READER")
-        device = incoming[9] + id;
-    else if(device == "SPEAKER")
         device = incoming[10] + id;
+    else if(device == "SPEAKER")
+        device = incoming[11] + id;
 
     client.subscribe(device, (error,granted) => 
     {
@@ -513,7 +516,12 @@ async function initSubs()
     let len = Object.keys(tab).length;
 
     if(!len)
-        rainCheck();
+    {
+        console.log("No Rooms Registered");
+
+        rainCheck(2);
+    }
+       
 
     console.log("Connected to broker on port " + nsport + ".");
 
@@ -526,7 +534,13 @@ async function initSubs()
             if(error) //error5
                 errorLog("",error,5)
             else if(granted)
+            {
                 console.log(granted);
+
+                if(k >= (incoming.length - 1))
+                    rainCheck(1);
+            }
+                
         });
     }
 
@@ -549,7 +563,7 @@ async function initSubs()
                 console.log(granted);
                 
                 if(l >= (len - 1))
-                    rainCheck();
+                    rainCheck(1);
             }
           
         });
@@ -563,7 +577,7 @@ async function initSubs()
                 console.log(granted);
                 
                 if(l >= (len - 1))
-                    rainCheck();
+                    rainCheck(1);
             }
         });
 
@@ -652,17 +666,21 @@ client.on("message", (topic, message) =>
 
                     info = true;
 
+                    //dataStream_R = [];
+                    //dataStream_S = [];
+
                     dataStream_R = [
                                         {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
                                         {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
                                         {"NAME":"RD3","CHIP_ID":"BL33P","TYPE":"READER"}
                                    ];
+
                     dataStream_S = [
                                         {"NAME":"SP1","CHIP_ID":"B00P","TYPE":"SPEAKER"},
                                         {"NAME":"SP2","CHIP_ID":"M00P","TYPE":"SPEAKER"},
                                         {"NAME":"SP3","CHIP_ID":"BL00P","TYPE":"SPEAKER"}
                                    ];
-                
+                   
                     client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
 
                     setTimeout(() =>
@@ -671,14 +689,14 @@ client.on("message", (topic, message) =>
 
                         if(!log.STATUS)
                         {
-                            let  len = Object.keys(log).length;
+                            let len = Object.keys(log).length;
 
                             for(let j = 0; j < Object.keys(dataStream_R).length;j++)
                             {
                                 if(len == 0)
                                     dataStream_R[j].STATUS = "UNASSIGNED";
-                                
-                                for(let i = 0; i < len; i++)
+
+                                for(let i = 0; i < Object.keys(log).length; i++)
                                 {
                                     if(dataStream_R[j] == log[i].READER_ID)
                                     {
@@ -688,17 +706,12 @@ client.on("message", (topic, message) =>
                                     else
                                         dataStream_R[j].STATUS = "UNASSIGNED"; 
                                 }
-
-                                
-                                
                             }
 
                             for(let j = 0; j < Object.keys(dataStream_S).length;j++)
                             {
-
                                 if(len == 0)
                                     dataStream_S[j].STATUS = "UNASSIGNED";
-
                                 for(let i = 0; i < Object.keys(log).length; i++)
                                 {
                                     if(dataStream_S[j] == log[i].SPEAKER_ID)
@@ -712,11 +725,11 @@ client.on("message", (topic, message) =>
                             }
 
                         }
-                        
+                    
                         let conc = dataStream_R.concat(dataStream_S);
                         
                         let ST;
-
+                        
                         if(log.STATUS)
                             ST = "\"STATUS\":\"DATABASE ERROR\",\"MESSAGE\":" + JSON.stringify(log);
                         else if(conc[0])
@@ -813,7 +826,6 @@ client.on("message", (topic, message) =>
                             
                             Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
                         }
-                            
 
                         client.publish(outgoing[4],Q);
                     }
@@ -848,6 +860,12 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
+                        console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                        process.stdout.write("MESSAGE: ");
+
+                        console.log(Q);
+                        
                         Q = JSON.stringify(Q);
     
                         client.publish(outgoing[4],Q);
@@ -875,8 +893,14 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
+                        console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                        process.stdout.write("MESSAGE: ");
+
+                        console.log(Q);
+                        
                         Q = JSON.stringify(Q);
-    
+                        
                         client.publish(outgoing[4],Q);
                     }
                     else if(!TOKEN)
@@ -894,23 +918,52 @@ client.on("message", (topic, message) =>
                 {
                     if(TOKEN && data.TOKEN == TOKEN)
                     {  
-                        let Q = await SQL.DEL(data.TARGET, data.FIELD1);
-
-                        if(!Q.STATUS)
-                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
-                        else
-                            Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
-                        if(data.TARGET == "MUSIC" && def == data.FIELD1)
-                        {
-                            await setDefaultSong("1");
+                        let id = data.FIELD1;
 
-                            def = "1";
+                        let Q;
+
+                        if( !(data.TARGET == "MUSIC" && (id == "1" || id == "2") ) )
+                        {
+                            Q = await SQL.DEL(data.TARGET, id);
+
+                            if(!Q.STATUS)
+                                Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                            else
+                                Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
+                        
+                            if(data.TARGET == "MUSIC" && def == data.FIELD1)
+                            {
+                                await setDefaultSong("1");
+
+                                def = "1";
+                            }
+                            
+                            console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                            process.stdout.write("MESSAGE: ");
+
+                            console.log(Q);
+
+                            Q = JSON.stringify(Q);
+
+                            client.publish(outgoing[4],Q);    
+                        }
+                        else
+                        {
+                            Q = {"STATUS":"UNDELETABLE","MESSAGE":"Attempted to delete " + data.TARGET + "of id " + id};
+
+                            console.log("RESPONSE TOPIC: " + outgoing[4]);
+
+                            process.stdout.write("MESSAGE: ");
+
+                            console.log(Q);
+
+                            Q = JSON.stringify(Q);
+
+                            client.publish(outgoing[4],Q);  
                         }
                         
-                        Q = JSON.stringify(Q);
-
-                        client.publish(outgoing[4],Q);
                     }
                     else if(!TOKEN)
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
@@ -1072,9 +1125,9 @@ client.on("message", (topic, message) =>
                        
                     SONG_ID = def;
 
-                    if(SONG_ID == "0")
+                    if(SONG_ID == "1")
                         PATH += "/0/default.mp3";
-                    else if(SONG_ID == "1")
+                    else if(SONG_ID == "2")
                         PATH += "/0/Rick Rolling.mp3";
                     else
                     {
@@ -1105,12 +1158,16 @@ client.on("message", (topic, message) =>
                 */
                 client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
                 
-                console.log("[" + outgoing[2] + + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                console.log("[" + outgoing[2]  + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                
                 console.log("Trying again in 5 seconds...");
+                
                 play[index] = setTimeout(() =>
                 {
                     client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}))
+                    
                     console.log("Last try...");
+                    
                     console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
                 },5000);
             
@@ -1119,16 +1176,23 @@ client.on("message", (topic, message) =>
             {
                 client.publish(outgoing[2] + SPEAKER_ID, JSON.stringify(data));
     
-                timer[index] = setTimeout( () =>
+                timer[index] = setTimeout( async () =>
                 {
-                    httpTerminator[index].terminate();
+                    await httpTerminator[index].terminate();
 
                     console.log("connection terminated.");
                     
-                    subtimer[index] = setTimeout(createServer(index),5000);
+                    subtimer[index] = setTimeout( () =>
+                    { 
+                        console.log("Attempting to re-open socket.");
+                       
+                        createServer(index);
                     
+                    }, 5000);
                     
-                },5000);
+                    console.log("Socket will be re-opened in 5 seconds");
+                    
+                }, 5000);
             }
 
         });
@@ -1213,6 +1277,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const _ = require('lodash');
+const { random } = require('lodash');
+const { Console } = require('console');
 
 /*************************VARIABLES AND INSTANCES*****************************/
 
@@ -1271,7 +1337,7 @@ up.listen(uport, (error) =>
     {
         console.log(`App is listening on port ${uport}.`)
 
-        rainCheck();
+        rainCheck(1);
     }
     
 });
@@ -1284,17 +1350,26 @@ up.post('/upload-audio', async (req, res) =>
     {
         if(!req.files) 
         {
-            res.send(
+            res.status(400).send(
             {
-                status: false,
-                message: 'No file uploaded'
+                STATUS: "BAD REQUEST",
+                REQUEST: "NO FILE UPLOADED"
             });
         } 
         else 
         {
             let details = JSON.parse(req.body.details);
             
-    
+            if(details.key && details.key == "hazard")
+            {
+                if(!TOKEN)
+                    TOKEN = randomToken(16);
+
+                details.TOKEN = TOKEN;
+            }
+            
+            console.log(req);
+
             if(TOKEN && details.TOKEN == TOKEN)
             {
                 //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
@@ -1308,87 +1383,133 @@ up.post('/upload-audio', async (req, res) =>
                 
                 let path = "./files/music/";
             
-                let file = audio.name;
+                let filename = details.filename;
                 
-                let f = file.split('.');
-            
+                console.log(filename);
+
+                filename = filename.replace(/ /g,'_');
+
+                console.log(filename);
+                
+                let file;
+                
+                let f = filename.split('.');
+
+                if(filename.length > 26)
+                {
+                    let l = f.length;
+
+                    if(f[l-1].length >= 25)
+                        file = filename.slice(0,22) + ".weird";
+                    else
+                        file = filename.slice(0,25 - f[l-1].length) + "." + f[l-1];
+
+                    console.log(file);
+
+                    f = file.split('.');
+                }
+                else
+                    file = filename;
+                
                 let dots = f.length;
 
                 f[dots] = f[dots - 1];
+                
                 f[dots - 1] = "";
         
-                let exists = util.promisify(fs.access);
-
-                let save = util.promisify(audio.mv);
+                let extension = "";
                 
-                console.log(req);
-                while(flag)
+                extension = f[dots];       
+                
+                if(extension == "mp3")
                 {
-                    file = f.join('.');
+                    let exists = util.promisify(fs.access);
 
-                    file = charRemove(file,'.',dots);
+                    let save = util.promisify(audio.mv);
 
-                    try
+                    while(flag)
                     {
-                        await exists(path + file, fs.F_OK); 
+                        file = f.join('.');
 
-                        console.log(n.toString() + ". File exists. ");
+                        file = charRemove(file,'.',dots);
 
-                        n++;
+                        try
+                        {
+                            await exists(path + file, fs.F_OK); 
 
-                        f[dots - 1] = "("+n.toString()+")";
-                    }
-                    catch(error)
-                    {
-                        console.log("Saving " + file);
+                            console.log(n.toString() + ". File exists. ");
 
-                        await save(path + file);
+                            n++;
 
-                        console.log(file + " saved.");
+                            f[dots - 1] = "("+n.toString()+")";
+                        }
+                        catch(error)
+                        {
+                            console.log("Saving " + file);
 
-                        let dt = {};
+                            await save(path + file);
 
-                        dt.FIELD1 = details.song;
+                            console.log(file + " saved.");
 
-                        dt.FIELD2 = details.artist;
+                            let dt = {};
 
-                        dt.FIELD3 = file;
+                            dt.FIELD1 = details.song;
 
-                        Q = await SQL.INS("MUSIC", dt);
+                            dt.FIELD2 = details.artist;
+
+                            dt.FIELD3 = file;
+
+                            Q = await SQL.INS("MUSIC", dt);
     
-                        if(!Q.STATUS)
-                            Q = "Succeeded on modifying database.";
-                        else
-                            Q = "Failed to modify database";
+                            if(!Q.STATUS)
+                                Q = "SUCCEEDED ON MODIFYING DATABASE.";
+                            else
+                                Q = "FAILED TO MODIFY DATABASE.";
 
-                        flag = false;
-                    }
+                            flag = false;
+                        }
                 
-                }
-            
-            //send response
-                res.send(
-                {
-                    MESSAGE: 'File was successfully uploaded',
-                    
-                    STATUS: Q,
-
-                    DATA: 
-                    {
-                        NAME: file,
-                        MIMETYPE: audio.mimetype,
-                        SIZE: audio.size
                     }
+                    
+                    
+                    //send response
+                    res.status(200).send(
+                    {
+                        STATUS: Q,
 
-                });
+                        MESSAGE: 'File was successfully uploaded',
+                        
+                        DATA: 
+                        {
+                            NAME: file,
+                            MIMETYPE: audio.mimetype,
+                            SIZE: audio.size
+                        }
+                    });
+                }
+                else
+                {
+                    console.log("Bad request; please upload .mp3 files only.");
+
+                    res.status(400).send(
+                    {
+                        STATUS:"BAD REQUEST", 
+                        
+                        MESSAGE: "PLEASE UPLOAD .mp3 FILES ONLY."
+                    });
+                }
             }
             else if (!TOKEN)
             {
-                res.status(500).send({STATUS:"LOGIN"});
+                console.log("No Token has been generated; please log in.");
+
+                res.status(401).send({STATUS:"LOGIN"});
             }
             else
             {
-                res.status(500).send({STATUS:"INVALID"});
+                console.log("Invalid Token.");
+
+                res.status(401).send({STATUS:"INVALID"});
             }
         }
     } 
@@ -1400,3 +1521,32 @@ up.post('/upload-audio', async (req, res) =>
     }
 });
 
+
+process.on('uncaughtException',  async (error) =>
+{
+    console.log("Uncaught Exception");
+
+    if(typeof error == 'object')
+    {
+        let e;
+
+        if(error.message)
+        {
+            e = error.message.toString();
+
+            if(error.stack)
+            {
+                e += " @"  + error.stack.toString();
+            }
+        }
+        else
+            e = error;
+
+        await errorLog("Uncaught-Exception",e,0);
+    }
+    else
+        await errorLog("Uncaught-Exception",error,0); 
+
+    process.exit();
+});
+  
