@@ -691,14 +691,18 @@ client.on("message", (topic, message) =>
                         {
                             let len = Object.keys(log).length;
 
+                            console.log("Checking...");
+                            process.stdout.write("Number of rooms: ");
+                            console.log(len);
+
                             for(let j = 0; j < Object.keys(dataStream_R).length;j++)
                             {
                                 if(len == 0)
                                     dataStream_R[j].STATUS = "UNASSIGNED";
 
-                                for(let i = 0; i < Object.keys(log).length; i++)
+                                for(let i = 0; i < len; i++)
                                 {
-                                    if(dataStream_R[j] == log[i].READER_ID)
+                                    if(dataStream_R[j].CHIP_ID == log[i].READER_ID)
                                     {
                                         dataStream_R[j].STATUS = "ASSIGNED";
                                         dataStream_R[j].ROOM = log[i].ROOM_NAME;
@@ -712,9 +716,10 @@ client.on("message", (topic, message) =>
                             {
                                 if(len == 0)
                                     dataStream_S[j].STATUS = "UNASSIGNED";
-                                for(let i = 0; i < Object.keys(log).length; i++)
+
+                                for(let i = 0; i < len; i++)
                                 {
-                                    if(dataStream_S[j] == log[i].SPEAKER_ID)
+                                    if(dataStream_S[j].CHIP_ID == log[i].SPEAKER_ID)
                                     {
                                         dataStream_S[j].STATUS = "ASSIGNED";
                                         dataStream_S[j].ROOM = log[i].ROOM_NAME;
