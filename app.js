@@ -955,7 +955,15 @@ client.on("message", (topic, message) =>
                   
                         if(!Q.STATUS)
                         {
-                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                            
+                            let CHANGES = null;
+                            
+                            if(Q[0])
+                            {
+                                CHANGES = Q[0].affectedRows;
+                            }
+
+                            Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
                             
                             if(data.TARGET == "ROOMS")
                             {
@@ -996,7 +1004,17 @@ client.on("message", (topic, message) =>
                         let Q = await SQL.UPDT(data.TARGET, data);
 
                         if(!Q.STATUS)
-                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                        {
+                            let CHANGES = null;
+
+                            if(Q[0])
+                            {
+                                CHANGES = Q[0].affectedRows;
+                            }
+
+                            Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
+                                
+                        }   
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
@@ -1035,7 +1053,16 @@ client.on("message", (topic, message) =>
                             Q = await SQL.DEL(data.TARGET, id);
 
                             if(!Q.STATUS)
-                                Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                            {
+                                let CHANGES = null;
+                            
+                                if(Q[0])
+                                {
+                                    CHANGES = Q[0].affectedRows;
+                                }
+    
+                                Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
+                            }
                             else
                                 Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         

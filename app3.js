@@ -276,6 +276,7 @@ broker.listen(nsport, () =>
     rainCheck(1);
 });
 
+
 /*WEBSOCKET SERVER*/
 
 ws.createServer({ server: httpServer }, aedes.handle);
@@ -283,9 +284,56 @@ ws.createServer({ server: httpServer }, aedes.handle);
 httpServer.listen(wsPort,  () =>
 {
     console.log('Aedes (MQTT Web-socket) listening on port: ' + wsPort);
-    aedes.publish({ topic: 'aedes/hello', payload: "I'm broker " + aedes.id });
+    aedes.publish({ topic: 'aedes/hello', payload: "I'm da broker " + aedes.id });
 
     rainCheck(1);
+});
+
+
+/***********************************EVENTS*************************************/
+
+aedes.on("clientError", (client,error) =>
+{   
+    let errorHeader = "An error has occurred with client " + client.toString() + ".";
+    
+    let errorMessage = errorHeader + "\n\r" + error.tostring();
+    
+    console.log(errorMessage);
+
+    errorLog("broker",errorMessage,1); //broker-error1
+});
+
+aedes.on("clientDisconnect", (client,error) =>
+{   
+    let errorHeader = "Client " + client.toString() + " has disconnected.";
+    
+    let errorMessage = errorHeader;
+    
+    console.log(errorMessage);
+
+    errorLog("broker",errorMessage,2); //broker-error2
+});
+
+aedes.on("connectionError", (client,error) =>
+{   
+    let errorHeader = "Client " + client.toString() + " failed to connect.";
+    
+    let errorMessage = errorHeader + "\n\r" + error.tostring();
+    
+    console.log(errorMessage);
+
+    errorLog("broker",errorMessage,3); //broker-error3
+});
+
+aedes.on("keepaliveTimeout", (client) =>
+{   
+    let errorHeader = "Client " + client.toString() + " unable to stay alive.";
+    
+    let errorMessage = errorHeader;
+    
+    console.log(errorMessage);
+
+    errorLog("broker",errorMessage,4); //broker-error4
 });
 
 /*******************************************************************************
@@ -660,95 +708,147 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
-                setImmediate( async () => 
+                if(!info)
                 {
-                    log = await SQL.SEL("*","ROOMS","","",false);
-
-                    info = true;
-
-                    //dataStream_R = [];
-                    //dataStream_S = [];
-
-                    dataStream_R = [
-                                        {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
-                                        {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
-                                        {"NAME":"RD3","CHIP_ID":"BL33P","TYPE":"READER"}
-                                   ];
-
-                    dataStream_S = [
-                                        {"NAME":"SP1","CHIP_ID":"B00P","TYPE":"SPEAKER"},
-                                        {"NAME":"SP2","CHIP_ID":"M00P","TYPE":"SPEAKER"},
-                                        {"NAME":"SP3","CHIP_ID":"BL00P","TYPE":"SPEAKER"}
-                                   ];
-                   
-                    client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
-
-                    setTimeout(() =>
+                    setImmediate( async () => 
                     {
-                        info = false;
-
-                        if(!log.STATUS)
+                        log = await SQL.SEL("*","ROOMS","","",false);
+    
+                        info = true;
+    
+                        //dataStream_R = [];
+                        //dataStream_S = [];
+    
+                        dataStream_R = [
+                                            {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
+                                            {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
+                                            {"NAME":"RD3","CHIP_ID":"BL33P","TYPE":"READER"}
+                                       ];
+    
+                        dataStream_S = [
+                                            {"NAME":"SP1","CHIP_ID":"B00P","TYPE":"SPEAKER"},
+                                            {"NAME":"SP2","CHIP_ID":"M00P","TYPE":"SPEAKER"},
+                                            {"NAME":"SP3","CHIP_ID":"BL00P","TYPE":"SPEAKER"}
+                                       ];
+                       
+                        client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
+    
+                        setTimeout(() =>
                         {
-                            let len = Object.keys(log).length;
+                            info = false;
 
-                            console.log("Checking...");
-                            process.stdout.write("Number of rooms: ");
-                            console.log(len);
-
-                            for(let j = 0; j < Object.keys(dataStream_R).length;j++)
+                            if(!log.STATUS)
                             {
-                                if(len == 0)
-                                    dataStream_R[j].STATUS = "UNASSIGNED";
-
-                                for(let i = 0; i < len; i++)
-                                {
-                                    if(dataStream_R[j].CHIP_ID == log[i].READER_ID)
-                                    {
-                                        dataStream_R[j].STATUS = "ASSIGNED";
-                                        dataStream_R[j].ROOM = log[i].ROOM_NAME;
-                                    }  
-                                    else
-                                        dataStream_R[j].STATUS = "UNASSIGNED"; 
-                                }
-                            }
-
-                            for(let j = 0; j < Object.keys(dataStream_S).length;j++)
-                            {
-                                if(len == 0)
-                                    dataStream_S[j].STATUS = "UNASSIGNED";
-
-                                for(let i = 0; i < len; i++)
-                                {
-                                    if(dataStream_S[j].CHIP_ID == log[i].SPEAKER_ID)
-                                    {
-                                        dataStream_S[j].STATUS = "ASSIGNED";
-                                        dataStream_S[j].ROOM = log[i].ROOM_NAME;
-                                    }  
-                                    else
-                                        dataStream_S[j].STATUS = "UNASSIGNED"; 
-                                }
-                            }
-
-                        }
+                                let len = Object.keys(log).length;
+                                
+                                let responvieness = [];
                     
-                        let conc = dataStream_R.concat(dataStream_S);
-                        
-                        let ST;
-                        
-                        if(log.STATUS)
-                            ST = "\"STATUS\":\"DATABASE ERROR\",\"MESSAGE\":" + JSON.stringify(log);
-                        else if(conc[0])
-                            ST = "\"STATUS\":\"SUCCESS\"";
-                        else
-                            ST = "\"STATUS\":\"EMPTY\"";
+                                console.log("Checking...");
+                                process.stdout.write("Number of rooms: ");
+                                console.log(len);
+                                
+                                let rlen = Object.keys(dataStream_R).length;
+                                
+                                for(let j = 0; j < rlen; j++)
+                                {
+                                    if(len == 0)
+                                        dataStream_R[j].STATUS = "UNASSIGNED";
+    
+                                    for(let i = 0; i < len; i++)
+                                    {
+                                        responsiveness.push({ID:log[i].READER_ID,RE:false});
+                                        responsiveness.push({ID:log[i].SPEAKER_ID,RE:false});
+
+                                        if(dataStream_R[j].CHIP_ID == log[i].READER_ID)
+                                        {
+                                            dataStream_R[j].STATUS = "ASSIGNED";
+                                            dataStream_R[j].ROOM = log[i].ROOM_NAME;
+
+                                            responsiveness[i*2].RE = true;
+                                        }  
+                                        else
+                                            dataStream_R[j].STATUS = "UNASSIGNED"; 
+                                    }
+                                }
+
+                                if(rlen == 0)
+                                {
+                                    for(let i = 0; i< len; i++)
+                                    {
+                                        responsiveness.push({ID:log[i].READER_ID,RE:false});
+                                        responsiveness.push({ID:log[i].SPEAKER_ID,RE:false});
+                                    }
+                                }
+    
+                                for(let j = 0; j < Object.keys(dataStream_S).length;j++)
+                                {
+                                    if(len == 0)
+                                        dataStream_S[j].STATUS = "UNASSIGNED";
+
+                                    for(let i = 0; i < len; i++)
+                                    {
+                                        if(dataStream_S[j].CHIP_ID == log[i].SPEAKER_ID)
+                                        {
+                                            dataStream_S[j].STATUS = "ASSIGNED";
+                                            
+                                            dataStream_S[j].ROOM = log[i].ROOM_NAME;
+
+                                            responsiveness[i*2 + 1].RE = true;
+                                        }  
+                                        else
+                                            dataStream_S[j].STATUS = "UNASSIGNED"; 
+                                    }
+                                }
+    
+                            }
                             
-                        let response = "{\"DEVICES\":" + JSON.stringify(conc) + "," + ST + "}";
-               
-                        client.publish(outgoing[1],response);
+                            for(let k = 0; k < Object.keys(responsiveness).length; k++)
+                            {
+                                if(responsiveness[k].RE == false)
+                                {
+                                    if(k%2 == 0)
+                                    {
+                                        let ID = responsiveness.ID;
+                                        
+                                        let reader = {CHIP_ID:ID,TYPE:"READER",STATUS:"UNRESPONSIVE"};
+
+                                        dataStream_R.push(reader);
+                                    }
+                                    else
+                                    {
+                                        let ID = responsiveness.ID;
+                                        
+                                        let speaker = {CHIP_ID:ID,TYPE:"SPEAKER",STATUS:"UNRESPONSIVE"};
+
+                                        dataStream_R.push(speaker);
+                                    }
+                                }
+                            }
+
+                            let conc = dataStream_R.concat(dataStream_S);
+                            
+                            let ST;
+                            
+                           
+                            if(log.STATUS)
+                                ST = "\"STATUS\":\"DATABASE ERROR\",\"MESSAGE\":" + JSON.stringify(log);
+                            else if(conc[0])
+                                ST = "\"STATUS\":\"SUCCESS\"";
+                            else
+                                ST = "\"STATUS\":\"EMPTY\"";
+                                
+                            let response = "{\"DEVICES\":" + JSON.stringify(conc) + "," + ST + "}";
+                   
+                            client.publish(outgoing[1],response);
+                        
+                        },5000);
+                
+                    });  
                     
-                    },5000);
-            
-                });  
+                }
+                /*else
+                    client.publish(outgoing[1],"{\"STATUS\":\"WAIT\"}");*/
+               
 
                 break;
             }
@@ -853,7 +953,15 @@ client.on("message", (topic, message) =>
                   
                         if(!Q.STATUS)
                         {
-                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                            
+                            let CHANGES = null;
+                            
+                            if(Q[0])
+                            {
+                                CHANGES = Q[0].affectedRows;
+                            }
+
+                            Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
                             
                             if(data.TARGET == "ROOMS")
                             {
@@ -894,7 +1002,17 @@ client.on("message", (topic, message) =>
                         let Q = await SQL.UPDT(data.TARGET, data);
 
                         if(!Q.STATUS)
-                            Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                        {
+                            let CHANGES = null;
+
+                            if(Q[0])
+                            {
+                                CHANGES = Q[0].affectedRows;
+                            }
+
+                            Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
+                                
+                        }   
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
@@ -933,7 +1051,16 @@ client.on("message", (topic, message) =>
                             Q = await SQL.DEL(data.TARGET, id);
 
                             if(!Q.STATUS)
-                                Q = {"STATUS":"SUCCESS","MESSAGE":JSON.stringify(Q)};
+                            {
+                                let CHANGES = null;
+                            
+                                if(Q[0])
+                                {
+                                    CHANGES = Q[0].affectedRows;
+                                }
+    
+                                Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
+                            }
                             else
                                 Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
@@ -1282,8 +1409,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const _ = require('lodash');
-const { random } = require('lodash');
+const { random, intersection } = require('lodash');
 const { Console } = require('console');
+const e = require('express');
 
 /*************************VARIABLES AND INSTANCES*****************************/
 
