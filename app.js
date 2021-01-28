@@ -743,7 +743,7 @@ client.on("message", (topic, message) =>
                             {
                                 let len = Object.keys(log).length;
                                 
-                                let responvieness = [];
+                                let responsiveness = [];
                     
                                 console.log("Checking...");
                                 process.stdout.write("Number of rooms: ");
@@ -964,7 +964,7 @@ client.on("message", (topic, message) =>
                             }
 
                             Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
-                            
+
                             if(data.TARGET == "ROOMS")
                             {
                                 newSubscription("READER",data.FIELD2);

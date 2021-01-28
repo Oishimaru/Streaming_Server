@@ -741,7 +741,7 @@ client.on("message", (topic, message) =>
                             {
                                 let len = Object.keys(log).length;
                                 
-                                let responvieness = [];
+                                let responsiveness = [];
                     
                                 console.log("Checking...");
                                 process.stdout.write("Number of rooms: ");
