@@ -538,9 +538,8 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       let result = await DB.promise().query(Q);
 
       r = JSON.parse(JSON.stringify(result));
-      
+  
       console.log(r);
-
 
       if(TAB == "MUSIC")
       {
@@ -556,7 +555,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
         
           await rename(path + prev, path + nw);
   
-          console.log("File " + prev +" canged to " + nw + ".");
+          console.log("File " + prev +" changed to " + nw + ".");
         }
         else
         {
