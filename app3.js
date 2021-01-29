@@ -294,18 +294,18 @@ httpServer.listen(wsPort,  () =>
 
 aedes.on("clientError", (client,error) =>
 {   
-    let errorHeader = "An error has occurred with client " + client.toString() + ".";
+    let errorHeader = "An error has occurred with client " +  client.id + ".";
     
-    let errorMessage = errorHeader + "\n\r" + error.tostring();
+    let errorMessage = errorHeader + "\n\r" + error.toString();
     
     console.log(errorMessage);
 
     errorLog("broker",errorMessage,1); //broker-error1
 });
 
-aedes.on("clientDisconnect", (client,error) =>
+aedes.on("clientDisconnect", (client) =>
 {   
-    let errorHeader = "Client " + client.toString() + " has disconnected.";
+    let errorHeader = "Client " +  client.id + " has disconnected.";
     
     let errorMessage = errorHeader;
     
@@ -316,9 +316,9 @@ aedes.on("clientDisconnect", (client,error) =>
 
 aedes.on("connectionError", (client,error) =>
 {   
-    let errorHeader = "Client " + client.toString() + " failed to connect.";
+    let errorHeader = "Client " +  client.id + " failed to connect.";
     
-    let errorMessage = errorHeader + "\n\r" + error.tostring();
+    let errorMessage = errorHeader + "\n\r" + error.toString();
     
     console.log(errorMessage);
 
@@ -327,7 +327,7 @@ aedes.on("connectionError", (client,error) =>
 
 aedes.on("keepaliveTimeout", (client) =>
 {   
-    let errorHeader = "Client " + client.toString() + " unable to stay alive.";
+    let errorHeader = "Client " +  client.id + " unable to stay alive.";
     
     let errorMessage = errorHeader;
     
@@ -344,6 +344,8 @@ aedes.on("keepaliveTimeout", (client) =>
 const mqtt = require("mqtt");
 
 const randomToken = require('random-token').create('abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
+
+const disk = require('./Modules/disk.js');
 
 const SQL = require('./Modules/SQL.js');
 
@@ -368,7 +370,8 @@ const incoming  = [
                     "APP/DEFAULT",
                     "READER/",
                     "SPEAKER/",
-                    "TEST/INIT"
+                    "TEST/INIT",
+                    "APP/STORAGE_INFO"
                   ];
 
 const outgoing = [
@@ -380,7 +383,7 @@ const outgoing = [
                     "TEST/RESPONSE"
                  ];
 
-var info = false;
+var info = false, block = false;
 
 var dataStream_R = [];
 var dataStream_S = [];
@@ -708,17 +711,20 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
-                if(!info)
+                if(!block)
                 {
+                    block = true;
+
                     setImmediate( async () => 
                     {
                         log = await SQL.SEL("*","ROOMS","","",false);
-    
+                        
                         info = true;
-    
+
                         //dataStream_R = [];
                         //dataStream_S = [];
     
+                        
                         dataStream_R = [
                                             {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
                                             {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
@@ -731,6 +737,7 @@ client.on("message", (topic, message) =>
                                             {"NAME":"SP3","CHIP_ID":"BL00P","TYPE":"SPEAKER"}
                                        ];
                        
+
                         client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
     
                         setTimeout(() =>
@@ -742,48 +749,79 @@ client.on("message", (topic, message) =>
                                 let len = Object.keys(log).length;
                                 
                                 let responsiveness = [];
-                    
+
                                 console.log("Checking...");
                                 process.stdout.write("Number of rooms: ");
                                 console.log(len);
                                 
                                 let rlen = Object.keys(dataStream_R).length;
-                                
+
+                                let reg = false;          
+
                                 for(let j = 0; j < rlen; j++)
-                                {
-                                    if(len == 0)
-                                        dataStream_R[j].STATUS = "UNASSIGNED";
-    
+                                {   
+                                    let done = false;
+                                    
                                     for(let i = 0; i < len; i++)
                                     {
-                                        responsiveness.push({ID:log[i].READER_ID,RE:false});
-                                        responsiveness.push({ID:log[i].SPEAKER_ID,RE:false});
+                                        if(!reg)
+                                        {
+                                            let reader = {};
+                                            reader.NAME = log[i].READER_NAME;
+                                            reader.ID = log[i].READER_ID;
+                                            reader.RE = false;
 
-                                        if(dataStream_R[j].CHIP_ID == log[i].READER_ID)
+                                            responsiveness.push(reader);
+
+                                            let speaker = {};
+                                            speaker.NAME = log[i].SPEAKER_NAME;
+                                            speaker.ID = log[i].SPEAKER_ID;
+                                            speaker.RE = false;
+
+                                            responsiveness.push(speaker);
+
+                                            if(i == (len -1))
+                                                reg = true;
+                                        }
+                                        
+                                        if(!done && dataStream_R[j].CHIP_ID == log[i].READER_ID) 
                                         {
                                             dataStream_R[j].STATUS = "ASSIGNED";
                                             dataStream_R[j].ROOM = log[i].ROOM_NAME;
 
                                             responsiveness[i*2].RE = true;
-                                        }  
-                                        else
-                                            dataStream_R[j].STATUS = "UNASSIGNED"; 
+
+                                            done = true;
+                                        }                   
                                     }
+
+                                    if(!done)
+                                        dataStream_R[j].STATUS = "UNASSIGNED"; 
                                 }
 
                                 if(rlen == 0)
                                 {
                                     for(let i = 0; i< len; i++)
                                     {
-                                        responsiveness.push({ID:log[i].READER_ID,RE:false});
-                                        responsiveness.push({ID:log[i].SPEAKER_ID,RE:false});
+                                        let reader = {};
+                                        reader.NAME = log[i].READER_NAME;
+                                        reader.ID = log[i].READER_ID;
+                                        reader.RE = false;
+
+                                        responsiveness.push(reader);
+
+                                        let speaker = {};
+                                        speaker.NAME = log[i].SPEAKER_NAME;
+                                        speaker.ID = log[i].SPEAKER_ID;
+                                        speaker.RE = false;
+
+                                        responsiveness.push(speaker);
                                     }
                                 }
     
                                 for(let j = 0; j < Object.keys(dataStream_S).length;j++)
                                 {
-                                    if(len == 0)
-                                        dataStream_S[j].STATUS = "UNASSIGNED";
+                                    let done = false;
 
                                     for(let i = 0; i < len; i++)
                                     {
@@ -794,42 +832,44 @@ client.on("message", (topic, message) =>
                                             dataStream_S[j].ROOM = log[i].ROOM_NAME;
 
                                             responsiveness[i*2 + 1].RE = true;
-                                        }  
-                                        else
-                                            dataStream_S[j].STATUS = "UNASSIGNED"; 
+                                            
+                                            done = true;
+                                            
+                                            break;
+                                        }           
                                     }
+
+                                    if(!done)
+                                        dataStream_S[j].STATUS = "UNASSIGNED"; 
                                 }
-    
-                            }
-                            
-                            for(let k = 0; k < Object.keys(responsiveness).length; k++)
-                            {
-                                if(responsiveness[k].RE == false)
+
+                                for(let k = 0; k < Object.keys(responsiveness).length; k++)
                                 {
-                                    if(k%2 == 0)
+                                    if(responsiveness[k].RE == false)
                                     {
-                                        let ID = responsiveness.ID;
-                                        
-                                        let reader = {CHIP_ID:ID,TYPE:"READER",STATUS:"UNRESPONSIVE"};
+                                        let NAME = responsiveness[k].NAME;
+                                        let CHIP_ID = responsiveness[k].ID;
+                                
+                                        if(k%2 == 0)
+                                        {                                        
+                                            let reader = {NAME,CHIP_ID,TYPE:"READER",STATUS:"UNRESPONSIVE"};
 
-                                        dataStream_R.push(reader);
-                                    }
-                                    else
-                                    {
-                                        let ID = responsiveness.ID;
-                                        
-                                        let speaker = {CHIP_ID:ID,TYPE:"SPEAKER",STATUS:"UNRESPONSIVE"};
+                                            dataStream_R.push(reader);
+                                        }
+                                        else
+                                        {                                        
+                                            let speaker = {CHIP_ID,NAME,TYPE:"SPEAKER",STATUS:"UNRESPONSIVE"};
 
-                                        dataStream_R.push(speaker);
+                                            dataStream_S.push(speaker);
+                                        }
                                     }
-                                }
+                                }                    
                             }
 
                             let conc = dataStream_R.concat(dataStream_S);
                             
                             let ST;
                             
-                           
                             if(log.STATUS)
                                 ST = "\"STATUS\":\"DATABASE ERROR\",\"MESSAGE\":" + JSON.stringify(log);
                             else if(conc[0])
@@ -841,6 +881,8 @@ client.on("message", (topic, message) =>
                    
                             client.publish(outgoing[1],response);
                         
+                            block = false;
+
                         },5000);
                 
                     });  
@@ -1123,6 +1165,21 @@ client.on("message", (topic, message) =>
                     else
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                     
+                });
+            }
+
+            case "STORAGE_INFO":
+            {
+                setImmediate( async () =>
+                {
+                    if(TOKEN && data.TOKEN == TOKEN)
+                    {
+                        disk.checkStorage('./files/music/','/',outgoing[1],client);
+                    }
+                    else if(!TOKEN)
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                    else
+                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                 });
             }
 
