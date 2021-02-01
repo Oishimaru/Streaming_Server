@@ -11,6 +11,7 @@ const mysql = require('mysql2');
 const fs = require('fs');
 
 const util = require('util');
+const { intersection } = require('lodash');
 
 /*********************************FUNCTIONS***********************************/
 
@@ -24,6 +25,31 @@ function DBconnection()
   });
 
   return con;
+}
+
+function purify(str)
+{
+  let aux = "";
+
+  for(let i = 0; i < str.length; i++)
+  {
+    if(aux)
+    {
+      if(str[i] != "'")
+        aux += str[i];
+      else
+        aux += "''";
+    }  
+    else
+    {
+      if(str[i] != "'")
+        aux = str[i];
+      else
+        aux = "''";
+    }
+  }
+
+  return aux;
 }
 
 async function errorLog(prefix,error,num)
@@ -294,6 +320,14 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
 
 module.exports.INS = async function INS(TAB,COL)
 {
+  let keys = Object.keys(COL);
+
+  for(let i = 0; i < keys.length; i++)
+  {
+    if(keys[i] != "TARGET" && keys[i] != "TOKEN" && isNaN(COL[keys[i]]))
+      COL[keys[i]] = purify(COL[keys[i]]);
+  }
+
   let DB = DBconnection();
 
   let r = "";
@@ -439,6 +473,14 @@ module.exports.INS = async function INS(TAB,COL)
 
 module.exports.UPDT = async function UPDT(TAB,COL)
 {
+  let keys = Object.keys(COL);
+
+  for(let i = 0; i < keys.length; i++)
+  {
+    if(keys[i] != "TARGET" && keys[i] != "TOKEN" && isNaN(COL[keys[i]]))
+      COL[keys[i]] = purify(COL[keys[i]]);
+  }
+
   let DB = DBconnection();
 
   let oldfile = "";

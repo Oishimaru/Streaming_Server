@@ -1536,6 +1536,7 @@ up.listen(uport, (error) =>
 
 up.post('/upload-audio', async (req, res) => 
 {
+    let JSONEX = false;
     try 
     {
         if(!req.files) 
@@ -1548,7 +1549,19 @@ up.post('/upload-audio', async (req, res) =>
         } 
         else 
         {
-            let details = JSON.parse(req.body.details);
+            let details = {};
+            
+            console.log(req);
+
+            try
+            {
+                details = JSON.parse(req.body.details);
+            }
+            catch(error)
+            {
+                JSONEX = true;
+            }
+            
             
             if(details.key && details.key == "hazard")
             {
@@ -1557,8 +1570,6 @@ up.post('/upload-audio', async (req, res) =>
 
                 details.TOKEN = TOKEN;
             }
-            
-            console.log(req);
 
             if(TOKEN && details.TOKEN == TOKEN)
             {
@@ -1691,9 +1702,24 @@ up.post('/upload-audio', async (req, res) =>
             }
             else if (!TOKEN)
             {
-                console.log("No Token has been generated; please log in.");
+                if(!JSONEX)
+                {
+                    console.log("No Token has been generated; please log in.");
 
-                res.status(401).send({STATUS:"LOGIN"});
+                    res.status(401).send({STATUS:"LOGIN"});
+                }
+                else
+                {
+                    res.status(400).send(
+                    {
+                        STATUS: "BAD REQUEST",
+                        REQUEST: "BAD JSON"
+                    });
+                    
+                    console.log("Bad Request: Bad JSON:");
+                    console.log(req.body.details);
+                }
+                
             }
             else
             {
