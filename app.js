@@ -39,6 +39,8 @@ var serv;
 
 var  httpTerminator = [];
 
+var termination = [];
+
 var play = [];
 
 var timer = [];
@@ -163,7 +165,7 @@ function hash(print,symbol)
     console.log("\x1b[0m");
 }
 
-function createServer(i)
+async function createServer(i)
 {
     app[i] = express();
 
@@ -180,7 +182,11 @@ function createServer(i)
     
     httpTerminator[i] = createHttpTerminator({ server: server[i] });
 
+    termination[i] = false;
+
     app[i].get('/audio/:reg/:file/',core.audioMedia);
+    
+    app[i].get('/playlist/:id/:track/',core.playlist);
 
     app[i].get('*',core.routeError); 
 }
@@ -1361,25 +1367,38 @@ client.on("message", (topic, message) =>
                 },5000);
             
             }
-            else if(ACTION == "STOP")
+            else if(ACTION == "STOP" && !termination[index])
             {
+                termination[index] = true;
+
                 client.publish(outgoing[2] + SPEAKER_ID, JSON.stringify(data));
     
                 timer[index] = setTimeout( async () =>
                 {
-                    await httpTerminator[index].terminate();
+                    try
+                    {
+                        await httpTerminator[index].terminate();
 
-                    console.log("connection terminated.");
+                        console.log("connection %u terminated.",index);
                     
-                    subtimer[index] = setTimeout( () =>
-                    { 
-                        console.log("Attempting to re-open socket.");
-                       
-                        createServer(index);
-                    
-                    }, 5000);
-                    
-                    console.log("Socket will be re-opened in 5 seconds");
+                        subtimer[index] = setTimeout( async () =>
+                        { 
+                            console.log("Attempting to re-open socket.");
+                            
+                            await createServer(index);
+
+                            termination[index] = false;
+                            
+                        }, 5000);
+
+                        console.log("Socket will be re-opened in 5 seconds");
+                    }
+                    catch(error)
+                    {
+                        errorLog("termination",error,1);
+
+                        termination[index] = false;
+                    }
                     
                 }, 5000);
             }
@@ -1411,6 +1430,8 @@ client.on("message", (topic, message) =>
                 case "OK":
                 {
                     clearTimeout(timer[index]); 
+
+                    termination[index] = false;
     
                     console.log("Received connection end confirmation.");
 
@@ -1420,10 +1441,24 @@ client.on("message", (topic, message) =>
                 case "DC":
                 {
                     clearTimeout(subtimer[index]);
+                    
+                    setImmediate(async () =>
+                    {
+                        try
+                        {
+                            await createServer(index);
     
-                    createServer(index);
-    
-                    console.log("Received reconnection ready confirmation.");
+                            console.log("Received reconnection ready confirmation.");     
+                        }
+                        catch(error)
+                        {
+                            errorLog("termination",error,2);
+                        }
+                        finally
+                        {
+                            termination[index] = false;
+                        }
+                    });
                     
                     break;
                     //REGISTER STUFF in error logs with time stamps

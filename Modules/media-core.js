@@ -1,6 +1,9 @@
 const fs   = require('fs');
+const { parse } = require('path');
 
 const util = require('util');
+
+const SQL = require('./Modules/SQL.js');
 
 //Ruta para los archivos.
 const dir  = ["./files/default/","./files/music/"];
@@ -124,7 +127,19 @@ module.exports.audioMedia = (req,res) =>
 			console.log("Streaming " + file + ".");
 
 			//Devuelvo streams del archivo atravez de un pipe.
-			fs.createReadStream(file).pipe(res);
+      let stream = fs.createReadStream(file).pipe(res);
+      
+      let hrstart = process.hrtime();
+
+      stream.on('finish', () =>
+      {
+        let hrend = process.hrtime(hrstart);
+
+        console.log("Done Streaming " + req.params.file + " on host " + req.get('host'));
+        console.log("%ds %dms",hrend[0],hrend[1]/1000000);
+
+      });
+      
 		}
 		catch(error)
 		{
@@ -140,6 +155,99 @@ module.exports.audioMedia = (req,res) =>
 		console.log("Bad request; file not specified.");
 
 		errorLog("media","Bad request; file not specified.",2);
+
+		res.status(400).send({STATUS:"BAD REQUEST", MESSAGE:"FILE NOT SPECIFIED."});
+	}
+		
+};
+
+
+module.exports.playlist = (req,res) => 
+{	
+	let playlist = req.params.id;
+
+	let track = parseInt(req.params.track);
+
+	if (playlist && track && playlist!= "random")
+	{
+    let retrieved = false;
+    
+    let tracks, file;
+
+    playlist = parseInt(playlist);
+    let Q = SQL.SEL("SONG_IDS","PLAYLISTS","ID",track,false);
+
+    if(!Q.STATUS && Q[0].SONG_IDS)
+    {
+      tracks = Q[0].SONG_IDS.split(',');
+
+      Q = SQL.SEL("FL_NAME","MUSIC","ID",tracks[track],false);
+
+      if(!Q.STATUS && Q[0].FL_NAME)
+      {
+        file = dir[1] + file;
+
+        retrieved = true;
+      }
+    }
+
+    if(retrieved)
+    {
+      let statFile;
+
+      try
+      {
+        statFile = fs.statSync(file);
+
+        //Armo headers.
+        res.writeHead(200, {'Content-Type': 'audio/mpeg','Content-Length': statFile.size});
+
+        console.log("Streaming " + file + ".");
+
+        //Devuelvo streams del archivo atravez de un pipe.
+        let stream = fs.createReadStream(file).pipe(res);
+        
+        let hrstart = process.hrtime();
+
+        stream.on('finish', () =>
+        {
+          let hrend = process.hrtime(hrstart);
+
+          console.log("Done Streaming " + req.params.file + " on host " + req.get('host'));
+          console.log("%ds %dms",hrend[0],hrend[1]/1000000);
+
+        });
+        
+      }
+      catch(error)
+      {
+        console.log("File " + file + " can't be found.");
+
+        errorLog("media","File " + file + " can't be found.\n\r\n\r" + error.toString(),3);
+
+        res.status(404).send({STATUS:"NOT FOUND",MESSAGE:"FILE " + file + " CAN'T BE FOUND."});
+      }
+    }
+    else
+    {
+      let message = "Playlist " + id.toString() + " retrieval error @ track " +  track.toString();
+      
+      process.stdout.write(message);
+      
+      errorLog("media",message,4);
+
+      res.status(500).send({STATUS:"FAILURE",MESSAGE:message});
+    }
+	}
+  else if(playlist == "random" && track)
+  {
+    
+  }
+	else
+	{
+		console.log("Bad request; file not specified.");
+
+		errorLog("media","Bad request; file not specified.",5);
 
 		res.status(400).send({STATUS:"BAD REQUEST", MESSAGE:"FILE NOT SPECIFIED."});
 	}

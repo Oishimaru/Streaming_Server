@@ -4,9 +4,13 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/sudo /usr/bin/node /var/www/Streaming_Server-main/app.js
+WorkingDirectory=/var/www/Streaming_Server-main
 StandardOutput=inherit
 StandardError=inherit
 Restart=on-failure
+#RestartSec=90
+#StartLimitInterval=0
+#StartLimitBurst=3
 User=ubuntu
 
 [Install]

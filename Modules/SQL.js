@@ -11,6 +11,7 @@ const mysql = require('mysql2');
 const fs = require('fs');
 
 const util = require('util');
+
 const { intersection } = require('lodash');
 
 /*********************************FUNCTIONS***********************************/
@@ -128,124 +129,6 @@ async function errorLog(prefix,error,num)
     }
 }
 
-async function portAvailable(DB,s)
-{
-  let r = s;
-
-  if(r.STATUS)
-    return r;
-
-  r = null;
-
-  console.log("SELECT");
-
-  let Q = "SELECT * FROM TCP_PORTS WHERE PORT_STATUS = 'UNASSIGNED' LIMIT 1;"
-
-  try
-  {
-    let result = await DB.promise().query(Q);
-    
-    console.log("TROUBLEMAKER?")
-
-    r = JSON.parse(JSON.stringify(result[0][0]));
-      
-    console.log(r);
-
-    r = r.ID;
-
-    console.log("TROUBLEMAKER?")
-    console.log(r);
-  }
-  catch(error) //sql-error0
-  {
-      errorLog("sql",error,0);
-
-      r = {};
-
-      r.STATUS = error.toString();
-  }
-  
-  return r;
-}
-
-async function portAssign(port,DB,s)
-{
-  let r = s;
-  
-  if (port.STATUS)
-    return port;
-
-  if(r.STATUS)
-    return r;
-  
-  r = null;
-
-  console.log("UPDATE");
-
-  let q1 = "UPDATE TCP_PORTS "
-  let q2 = "SET PORT_STATUS = 'ASSIGNED' "
-  let q3 = "WHERE ID = " + port.toString() + ";";
-
-  let Q = q1 + q2 + q3;
-
-  try
-  {
-    let result = await DB.promise().query(Q);
-
-    r = JSON.parse(JSON.stringify(result))
-    
-    console.log(r);
-  }
-  catch(error) //sql-error1
-  {
-      errorLog("sql",error,1);
-
-      r.STATUS = error.toString();
-  }
-
-  return r;
-}
-
-async function portUnassign(port,DB,s)
-{
-  let r = s;
-  
-  if (port.STATUS)
-    return port;
-
-  if(r.STATUS)
-    return r;
-
-  r = null;
-
-  console.log("UPDATE");
-
-  let q1 = "UPDATE TCP_PORTS "
-  let q2 = "SET PORT_STATUS = 'UNASSIGNED' "
-  let q3 = "WHERE ID = " + port.toString() + ";";
-
-  let Q = q1 + q2 + q3;
-
-  try
-  {
-    let result = await DB.promise().query(Q);
-
-    r = JSON.parse(JSON.stringify(result));
-      
-    console.log(r);
-  }
-  catch(error) //sql-errror2
-  {
-      errorLog("sql",error,2);
-
-      r = {};
-
-      r.STATUS = error.toString();
-  }
-
-  return r;
-}
-
 /**********************************EXPORTS************************************/
 
 /*SELECT QUERY*/
@@ -289,7 +172,7 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
     if(STR)
       Q += " WHERE " + PARAM + " = '" + WHERE + "'";
     else
-      Q += " WHERE " + PARAM + " = " + WHERE;
+      Q += " WHERE " + PARAM + " = " + WHERE.toString();
   }
    
   console.log("SELECT " + S + " FROM " + Q + ";");
@@ -298,20 +181,18 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
   {
     let [result,fields] = await DB.promise().query("SELECT " + S +  " FROM " + Q + ";");
 
-    r = JSON.parse(JSON.stringify(result));
-
-    console.log(r);
+    r = JSON.parse(JSON.stringify(result));   
   }
   catch(error) //sql-error4
   {
     errorLog("sql",error,4);
     
-    r = {};
-
-    r.STATUS = error;
+    r = {}; r.STATUS = error;
   }
 
   DB.end();
+
+  console.log(r);
 
   return r;
 }
@@ -320,13 +201,31 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
 
 module.exports.INS = async function INS(TAB,COL)
 {
+  let Q = "CALL ss_" + TAB + "_INS(";
+
   let keys = Object.keys(COL);
+  
+  let params = [], mark = false;
 
   for(let i = 0; i < keys.length; i++)
   {
-    if(keys[i] != "TARGET" && keys[i] != "TOKEN" && isNaN(COL[keys[i]]))
-      COL[keys[i]] = purify(COL[keys[i]]);
+    if(keys[i] != "TARGET" && keys[i] != "TOKEN")
+    { 
+      if(isNaN(COL[keys[i]]))
+        COL[keys[i]] = purify(COL[keys[i]]);
+      
+      if(mark)
+        Q += ',';
+      else
+        mark = true;
+      
+      Q += '?';
+
+      params.push(COL[keys[i]]);
+    }     
   }
+
+  Q += ')';
 
   let DB = DBconnection();
 
@@ -341,15 +240,11 @@ module.exports.INS = async function INS(TAB,COL)
         DB.end();
       }
       catch
-      {
-
-      }
+      {}
       
       errorLog("sql",error,5); //sql-error5
       
-      r = {};
-
-      r.STATUS = error;
+      r = {}; r.STATUS = error;
     }  
   });
 
@@ -358,111 +253,35 @@ module.exports.INS = async function INS(TAB,COL)
 
   console.log("INSERT");
 
-  let q1 = "INSERT INTO " + TAB;
-
-  let q2;
-
-  let q3;
-
-  let port;
-
-
-  switch(TAB)
-  {
-    case "ROOMS":
-    {
-      q2  = " (ROOM_NAME,READER_ID,SPEAKER_ID,READER_NAME,SPEAKER_NAME,PORT_ID) ";
-
-      port = await portAvailable(DB,r);   
-      
-      if(port.STATUS)
-      {
-        DB.end();
-
-        return port;
-      }
-        
-      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','"  + COL.FIELD3 + "','"  + COL.FIELD4 + "','"  + COL.FIELD5 + "'," + port.toString() + ");";
-      
-      break;
-    }
-
-    case "TAGS":
-    {
-      let today = new Date();
-
-      let ymd = [today.getFullYear().toString(),(today.getMonth() + 1).toString(),today.getDate().toString()];
-
-      q2 = " (TAG,SONG_ID,DATE_REG) ";
-
-      q3 =  "VALUES ('" + COL.FIELD1 + "'," + COL.FIELD2 + ",'" + ymd.join('-') + "');";
-
-      break;
-    }
-
-    case "MUSIC":
-    {
-      q2 = " (SONG_NAME,ARTIST,FL_NAME) ";
-
-      q3 =  "VALUES ('" + COL.FIELD1 + "','" + COL.FIELD2 + "','" + COL.FIELD3 + "');";
-
-      break;
-    }
-
-    default:
-    {
-      q1 = "INSERT INTO TEST";
-
-      q2 = " (ID,ANIMAL,COLOR) ";
-
-      let F2 = "'" + COL.FIELD2;
-      F2 += "'";
-
-      let F3 = "'" + COL.FIELD3;
-      F3 += "'";
-
-      q3 = "VALUES (" + COL.FIELD1 + "," + F2 + "," + F3 + ";";
-
-      break;
-    }
-  }
-
-  let Q =  q1 + q2 + q3;
-  
   console.log(Q);
-
-  console.log("wa");
+  process.stdout.write("Parameters: "); console.log(params);
 
   try
   {
-    let result = await DB.promise().query(Q);
-
-    if(TAB == "ROOMS")
-    {
-      r = await portAssign(port,DB,r);
-
-      if(r.STATUS)
-      {
-        DB.end();
-
-        return r;
-      }
-    }
+    let [result,fields] = await DB.promise().query(Q,params);
 
     r = JSON.parse(JSON.stringify(result));
-      
-    console.log(r);
+
+    if(TAB == "ROOMS")
+    {   
+      if(r["1"] == 1)
+        r.affectedRows = 1;
+      else
+      {
+        r.affectedRows = 0;
+        r.message = "All ports might assigned.";
+      }
+    }
+     
   }
   catch(error) //sql-error6
   {
       errorLog("sql",error,6);
 
-      r = {};
-
-      r.STATUS = error;
-
-      console.log(r);
+      r = {}; r.STATUS = error;
   }
+
+  console.log(r);
 
   DB.end();
 
@@ -473,17 +292,36 @@ module.exports.INS = async function INS(TAB,COL)
 
 module.exports.UPDT = async function UPDT(TAB,COL)
 {
+  let Q = "CALL ss_" + TAB + "_UPD(";
+
   let keys = Object.keys(COL);
+  
+  let params = [], mark = false;
 
   for(let i = 0; i < keys.length; i++)
   {
-    if(keys[i] != "TARGET" && keys[i] != "TOKEN" && isNaN(COL[keys[i]]))
-      COL[keys[i]] = purify(COL[keys[i]]);
+    if(keys[i] != "TARGET" && keys[i] != "TOKEN")
+    { 
+      if(isNaN(COL[keys[i]]))
+      {
+        if(i == (keys.length - 1))
+          COL[keys[i]] = parseInt(COL[keys[i]]); 
+        else
+          COL[keys[i]] = purify(COL[keys[i]]);     
+      }
+      
+      if(mark)
+        Q += ',';
+      else
+        mark = true;
+      
+      Q += '?';
+
+      params.push(COL[keys[i]]);
+    }     
   }
 
   let DB = DBconnection();
-
-  let oldfile = "";
 
   let r = "";
     
@@ -496,15 +334,11 @@ module.exports.UPDT = async function UPDT(TAB,COL)
         DB.end();
       }
       catch
-      {
-
-      }
+      {}
       
       errorLog("sql",error,7); //sql-error7
 
-      r = {};
-
-      r.STATUS = error;
+      r = {}; r.STATUS = error;
     }  
   });
 
@@ -512,82 +346,25 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     return r;
 
   console.log("UPDATE");
-
-  let q1 = "UPDATE " + TAB + " SET";
-
-  let q2;
-
-  let q3;
   
-  switch(TAB)
-  {
-    case "ROOMS":
-    {
-      q2  = " ROOM_NAME = '" + COL.FIELD1 + "', READER_ID = '" + COL.FIELD2 + "', SPEAKER_ID = '" + COL.FIELD3 +
-            "', READER_NAME= '" + COL.FIELD4 + "', SPEAKER_NAME = '" + COL.FIELD5 + "' ";
-      
-      q3 = "WHERE ID = " + COL.FIELD6 + ";";
-
-      break;
-    }
-
-    case "TAGS":
-    {
-      q2 = " SONG_ID = " + COL.FIELD1;
-
-      q3 = " WHERE ID = " + COL.FIELD2 + ";";
-
-      break;
-    }
-
-    case "MUSIC":
-    {
-      q2 = " SONG_NAME = '" + COL.FIELD1 + "', ARTIST = '" + COL.FIELD2 + "', FL_NAME = '" + COL.FIELD3 + "' ";
-
-      q3 = "WHERE ID = " + COL.FIELD4 + ";";
-
-      try
-      {
-        let fields;
-
-        [oldfile,field] = await DB.promise().query("SELECT FL_NAME FROM MUSIC WHERE ID = " + COL.FIELD4 + ";");
-
-        oldfile = JSON.parse(JSON.stringify(oldfile));
-        
-        console.log(oldfile);
-      }
-      catch(error)
-      {
-        errorLog("sql",error,11);
-
-        r = {};
-
-        r.STATUS = error;
-      }
-      
-      break;
-    }
-  }
-
-  let Q =  q1 + q2 + q3;
-
   console.log(Q);
+  process.stdout.write("Parameters: "); console.log(params);
   
   try
   {
-    if(TAB!= "MUSIC" || Object.keys(oldfile).length > 0)
-    {
-      let result = await DB.promise().query(Q);
-
+      let [result,fields] = await DB.promise().query(Q,params);
+    
       r = JSON.parse(JSON.stringify(result));
-  
-      console.log(r);
 
-      if(TAB == "MUSIC")
+      let oldfile = Object.keys(r)[0];
+
+      if(TAB == "MUSIC" && oldfile)
       {
-        let prev = oldfile[0].FL_NAME;
+        let prev = oldfile;
 
         let nw  = COL.FIELD3;
+
+        r.affectedRows = 1;
 
         if(prev != nw)
         {
@@ -605,19 +382,17 @@ module.exports.UPDT = async function UPDT(TAB,COL)
         }
         
       }
-
-    } 
   }
   catch(error) //sql-error8
   {
       errorLog("sql",error,8);
 
-      r = {};
-
-      r.STATUS = error;
+      r = {}; r.STATUS = error;
   }
 
   DB.end();
+
+  console.log(r);
 
   return r;
 }
@@ -626,7 +401,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
 module.exports.DEL = async function DEL(TAB,WHERE)
 { 
-  var query;
+  let Q = "CALL ss_" + TAB + "_DEL(?)";
 
   var DB = DBconnection();
   
@@ -641,9 +416,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
         DB.end();
       }
       catch
-      {
-
-      }
+      {}
       
       errorLog("sql",error,9); //sql-error9
 
@@ -651,102 +424,70 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     }  
   });
 
-  if(TAB == "ROOMS")
-  {
-    try
-    {
-      query = await module.exports.SEL("*",TAB,"ID", WHERE, false);
-    }
-    catch(error) //sql-error12
-    { 
-      errorLog("sql",error,12);
-  
-      r = {};
-  
-      r.STATUS = error;
-    }
-  }  
-  else if(TAB == "MUSIC")
-  {
-    try
-    {
-      query = await module.exports.SEL("FL_NAME",TAB,"ID", WHERE, false);
-    }
-    catch(error) //sql-error12
-    { 
-      errorLog("sql",error,14);
-  
-      r = {};
-  
-      r.STATUS = error;
-    }
-  }  
-
-
   if(r.STATUS)
     return r;
   
   console.log("DELETE");
 
-  let Q = TAB + " WHERE ID = " + WHERE.toString();
+  console.log(Q);
+
+  process.stdout.write("ID: "); console.log(WHERE);
   
   try
   {
-    let result = await DB.promise().query("DELETE FROM " + Q + ";");
-    let message = "";
+    let [result,fields] = await DB.promise().query(Q,parseInt(WHERE));
 
-    if(TAB == "ROOMS")
-    {
-      if(query[0] && !query.STATUS)
-        await portUnassign(query[0].PORT_ID,DB,r);
-    }
-    else if(TAB == "MUSIC")
+    r = JSON.parse(JSON.stringify(result));
+
+    let file = Object.keys(r)[0];
+    
+    if(TAB == "MUSIC")
     {
        let del = util.promisify(fs.unlink);
 
        let exists = util.promisify(fs.access);
 
-       if(query[0] && !query.STATUS)
+       if(file)
        {
-          console.log("Attempting to delete file "+ query[0].FL_NAME)
+          r.affectedRows = 1;
+
+          console.log("Attempting to delete file " + file)
 
           try
           {
-            await exists("./files/music/" + query[0].FL_NAME);
+            await exists("./files/music/" + file);
 
-            await del("./files/music/" + query[0].FL_NAME);
+            await del("./files/music/" + file);
 
-            console.log(query[0].FL_NAME + " successfully deleted.")
+            console.log(file + " successfully deleted.")
 
           }
           catch(error)
           {
             console.log(error);
 
-            message = "SUCCEEDED IN DELETING DATABASE ENTRY BUT NOT FILE";
+            r.message = "SUCCEEDED IN DELETING DATABASE ENTRY BUT NOT FILE";
 
-          }
-          
-
-   
+          } 
        }
-         
+       else 
+        r.affectedRows = 0;     
     }
-
-    r = JSON.parse(JSON.stringify(result));
-      
-    console.log(r);
+    else if(TAB == "ROOMS")
+    {
+      r.affectedRows = r["1"];
+    } 
   }
   catch(error) //sql-error10
   { 
     errorLog("sql",error,10);
 
-    r = {};
-
-    r.STATUS = error;
+    r = {}; r.STATUS = error;
   }
 
   DB.end();
+
+  console.log(r);
 
   return r;
 }
