@@ -13,6 +13,7 @@ const fs = require('fs');
 const util = require('util');
 
 const { intersection } = require('lodash');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
 /*********************************FUNCTIONS***********************************/
 
@@ -207,24 +208,44 @@ module.exports.INS = async function INS(TAB,COL)
   
   let params = [], mark = false;
 
-  for(let i = 0; i < keys.length; i++)
+  let prefix = TAB.slice(0,2);
+
+  if(prefix != "AT" && prefix != "PT")
   {
-    if(keys[i] != "TARGET" && keys[i] != "TOKEN")
-    { 
-      if(isNaN(COL[keys[i]]))
-        COL[keys[i]] = purify(COL[keys[i]]);
-      
-      if(mark)
-        Q += ',';
-      else
-        mark = true;
-      
-      Q += '?';
+    for(let i = 0; i < keys.length; i++)
+    {
+      if(keys[i] != "TARGET" && keys[i] != "TOKEN")
+      { 
+        if(isNaN(COL[keys[i]]))
+          COL[keys[i]] = purify(COL[keys[i]]);
+        
+        if(mark)
+          Q += ',';
+        else
+          mark = true;
+        
+        Q += '?';
 
-      params.push(COL[keys[i]]);
-    }     
+        params.push(COL[keys[i]]);
+      }     
+    }
   }
+  else
+  {
+    if(prefix != "AT")
+    {
+      Q = Q.replace(TAB,"PTX") + "?,?,?";
 
+      params = [TAB,parseInt(COL.FIELD1),true];
+    }
+    else
+    {
+      Q = Q.replace(TAB,"ATX") + "?,?,?,?"; 
+
+      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2),true];
+    }  
+  }
+  
   Q += ')';
 
   let DB = DBconnection();
@@ -255,6 +276,8 @@ module.exports.INS = async function INS(TAB,COL)
 
   console.log(Q);
   process.stdout.write("Parameters: "); console.log(params);
+  
+  let ins = 0;
 
   try
   {
@@ -264,12 +287,80 @@ module.exports.INS = async function INS(TAB,COL)
 
     if(TAB == "ROOMS")
     {   
-      if(r["1"] == 1)
+      if( Object.values(r[0])[0] == 1)
         r.affectedRows = 1;
       else
       {
         r.affectedRows = 0;
         r.message = "All ports might assigned.";
+      }
+    }
+    else if(TAB == "PLAYLISTS")
+    {
+      let X =  Object.values(r[0])[0];
+      
+      if(COL.FIELD3)
+      {
+        let songs = COL.FIELD3.split(',');
+        
+        let len = songs.length;
+      
+        Q = "CALL ss_PTX_INS(?,?,?)";
+
+        if(X)
+        {
+          let table = "PT" + X.toString();
+
+          for(let i = 0; i < len; i++)
+          {
+            let song = parseInt(songs[i]);
+
+            [result,fields] = await DB.promise().query(Q,[table,song,false]);
+
+            r = JSON.parse(JSON.stringify(result));
+
+            if(r[0].affectedRows)
+              ins++;
+          }
+          
+          r[0].affectedRows = ins + 1;
+
+        }
+        
+        
+        if(COL.FIELD2 && COL.FIELD4  && COL.FIELD5)
+        {
+          let ads = COL.FIELD4.split(',');
+
+          let rates = COL.FIELD4.split(',');
+        
+          let len = ads.length;
+
+          
+          Q = "CALL ss_ATX_INS(?,?,?,?)";
+
+          if(X)
+          {
+            let table = "AT" + X.toString();
+
+            
+            for(let i = 0; i < len; i++)
+            {
+              let a = parseInt(ads[i]),rt =parseInt(rates[i]);
+
+              [result,fields] = await DB.promise().query(Q,[table,a,rt,false]);
+
+              r = JSON.parse(JSON.stringify(result));
+
+              if(r[0].affectedRows)
+                ins++;
+            }
+            
+            r[0].affectedRows = ins + 1;
+
+          }
+        }
+        
       }
     }
      
@@ -298,29 +389,49 @@ module.exports.UPDT = async function UPDT(TAB,COL)
   
   let params = [], mark = false;
 
-  for(let i = 0; i < keys.length; i++)
+  let prefix = TAB.slice(0,2);
+
+  if(prefix != "PT" && prefix != "AT")
   {
-    if(keys[i] != "TARGET" && keys[i] != "TOKEN")
-    { 
-      if(isNaN(COL[keys[i]]))
-      {
-        if(i == (keys.length - 1))
-          COL[keys[i]] = parseInt(COL[keys[i]]); 
+    for(let i = 0; i < keys.length; i++)
+    {
+      if(keys[i] != "TARGET" && keys[i] != "TOKEN")
+      { 
+        if(isNaN(COL[keys[i]]))
+        {
+          if(i == (keys.length - 1))
+            COL[keys[i]] = parseInt(COL[keys[i]]); 
+          else
+            COL[keys[i]] = purify(COL[keys[i]]);     
+        }
+        
+        if(mark)
+          Q += ',';
         else
-          COL[keys[i]] = purify(COL[keys[i]]);     
-      }
-      
-      if(mark)
-        Q += ',';
-      else
-        mark = true;
-      
-      Q += '?';
+          mark = true;
+        
+        Q += '?';
 
-      params.push(COL[keys[i]]);
-    }     
+        params.push(COL[keys[i]]);
+      }     
+    }
   }
+  else
+  {
+    if(prefix != "AT")
+    {
+      Q = Q.replace(TAB,"PTX") + "?,?,?";
 
+      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2)];
+    }
+    else
+    {
+      Q = Q.replace(TAB,"ATX") + "?,?,?,?"; 
+
+      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2),parseInt(COL.FIELD3)];
+    }  
+  }
+  
   let DB = DBconnection();
 
   let r = "";
@@ -356,7 +467,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     
       r = JSON.parse(JSON.stringify(result));
 
-      let oldfile = Object.keys(r)[0];
+      let oldfile =  Object.values(r[0])[0];
 
       if(TAB == "MUSIC" && oldfile)
       {
@@ -401,12 +512,27 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
 module.exports.DEL = async function DEL(TAB,WHERE)
 { 
-  let Q = "CALL ss_" + TAB + "_DEL(?)";
+  let Q = "CALL ss_" + TAB + "_DEL(?";
+
+  let params = [];
+
+  let prefix = TAB.slice(0,2);
+
+  if(prefix == "AT" || prefix == "PT" )
+  {
+    Q = Q.replace(TAB, prefix + 'X') + ",?";
+
+    params.push(TAB);
+  }
+  
+  params.push(parseInt(WHERE));
+  
+  Q += ')';
 
   var DB = DBconnection();
   
   var r = "";
-
+  
   DB.connect( (error) =>
   {
     if(error)
@@ -431,15 +557,15 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 
   console.log(Q);
 
-  process.stdout.write("ID: "); console.log(WHERE);
+  process.stdout.write("Parameters: "); console.log(params);
   
   try
   {
-    let [result,fields] = await DB.promise().query(Q,parseInt(WHERE));
+    let [result,fields] = await DB.promise().query(Q,params);
 
     r = JSON.parse(JSON.stringify(result));
 
-    let file = Object.keys(r)[0];
+    let file =  Object.values(r[0])[0];
     
     if(TAB == "MUSIC")
     {
@@ -475,7 +601,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     }
     else if(TAB == "ROOMS")
     {
-      r.affectedRows = r["1"];
+      r.affectedRows = Object.values(r[0])[0];
     } 
   }
   catch(error) //sql-error10
