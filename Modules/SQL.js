@@ -13,7 +13,7 @@ const fs = require('fs');
 const util = require('util');
 
 const { intersection } = require('lodash');
-const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG, SSL_OP_TLS_ROLLBACK_BUG } = require('constants');
 
 /*********************************FUNCTIONS***********************************/
 
@@ -283,9 +283,9 @@ module.exports.INS = async function INS(TAB,COL)
     }
     else
     {
-      Q = Q.replace(TAB,"ATX") + "?,?,?,?"; 
+      Q = Q.replace(TAB,"ATX") + "?,?,?,?,?"; 
 
-      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2),true];
+      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2),COL.FIELD3,true];
     }  
   }
   
@@ -371,24 +371,25 @@ module.exports.INS = async function INS(TAB,COL)
         }
         
         
-        if(COL.FIELD2 && COL.FIELD4  && COL.FIELD5)
+        if(COL.FIELD2 && COL.FIELD4  && COL.FIELD5 && COL.FIELD6)
         {
           let ads = COL.FIELD5.split(',');
 
+          let pb = COL.FIELD6.split(',');
+
           let len = ads.length;
 
-          Q = "CALL ss_ATX_INS(?,?,?,?)";
+          Q = "CALL ss_ATX_INS(?,?,?,?,?)";
 
           if(X)
           {
             let table = "AT" + X.toString();
-
-            
+     
             for(let i = 0; i < len; i++)
             {
-              let a = parseInt(ads[i]),rt =parseInt(rates[i]);
+              let a = parseInt(ads[i]), p = pb[i], rt =parseInt(rates[i]);
 
-              [result,fields] = await DB.promise().query(Q,[table,a,rt,false]);
+              [result,fields] = await DB.promise().query(Q,[table,a,rt,p,false]);
 
               r = JSON.parse(JSON.stringify(result));
 
@@ -466,9 +467,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     }
     else
     {
-      Q = Q.replace(TAB,"ATX") + "?,?,?,?"; 
+      Q = Q.replace(TAB,"ATX") + "?,?,?,?,?"; 
 
-      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2),parseInt(COL.FIELD3)];
+      params = [TAB,parseInt(COL.FIELD1),parseInt(COL.FIELD2),COL.FIELD3,parseInt(COL.FIELD4)];
     }  
   }
   
@@ -509,7 +510,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
       let oldfile =  Object.values(r[0])[0];
 
-      if(TAB == "MUSIC" && oldfile)
+      if((TAB == "MUSIC" || TAB == "ADS") && oldfile)
       {
         let prev = oldfile;
 
@@ -521,7 +522,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
         {
           let rename = util.promisify(fs.rename);
 
-          let path = "./files/music/";
+          let path = "./files/" + TAB.toLowerCase() + "/";
         
           await rename(path + prev, path + nw);
   
@@ -607,7 +608,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 
     let file =  Object.values(r[0])[0];
     
-    if(TAB == "MUSIC")
+    if(TAB == "MUSIC" || TAB == "ADS")
     {
        let del = util.promisify(fs.unlink);
 
@@ -621,9 +622,11 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 
           try
           {
-            await exists("./files/music/" + file);
+            let path = "./files/" + TAB.toLowerCase() + "/";
 
-            await del("./files/music/" + file);
+            await exists(path + file);
+
+            await del(path + file);
 
             console.log(file + " successfully deleted.")
 

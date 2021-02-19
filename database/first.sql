@@ -149,9 +149,6 @@ INSERT INTO TCP_PORTS (ID,PORT,PORT_STATUS)
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
     VALUES ('default','GOOGLE TRANSLATE','default.mp3');
 
-INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
-    VALUES ('Never Gonna Give You Up','Rick Astley','Rick Rolling.m4a');
-
 #------------------------------------------------PROCEDURES----------------------------------------------------------
 
 DELIMITER $$
@@ -192,6 +189,14 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
+CREATE PROCEDURE ss_ADS_INS(IN TOPIC TEXT,IN FL_NAME VARCHAR(40))
+
+BEGIN
+
+    INSERT INTO ADS (TOPIC,FL_NAME) VALUES (TOPIC,FL_NAME);
+
+END $$
+#-----------------------------------------------------------------------------------------------------------------
 CREATE PROCEDURE ss_PLAYLISTS_INS(IN LIST_NAME TEXT,IN TRACKS INT,IN ADS BIT,IN MIN_AD_RATE INT)
 
 BEGIN
@@ -206,8 +211,10 @@ BEGIN
 
     UPDATE PLAYLISTS SET PL_TABLE_NAME = @PL_TAB, AD_TABLE_NAME = @AD_TAB;
 
-    SET @FIELDS ='(ID INTEGER NOT NULL AUTO_INCREMENT,SONG_ID INTEGER NOT NULL,';
-
+    SET @FIELDS ='(ID INTEGER NOT NULL AUTO_INCREMENT,SONG_ID INTEGER NOT NULL, PLAYBACK TEXT NOT NULL,';
+    
+    -- PLAYBACK: START, DELAYED, ONCE_S, ONCE_D, NEVER
+    
     SET @CONSTRAINTS = 'PRIMARY KEY(ID),CONSTRAINT FK_SONG FOREIGN KEY (SONG_ID) REFERENCES MUSIC (ID) ON DELETE CASCADE)';
 
     SET @STM = CONCAT("CREATE TABLE ",@TAB,@FIELDS,@CONSTRAINTS);
@@ -257,17 +264,17 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
-CREATE PROCEDURE ss_ATX_INS(IN TAB VARCHAR(6),IN AD_ID INT,IN RATE INT,IN UPDT BOOLEAN)
+CREATE PROCEDURE ss_ATX_INS(IN TAB VARCHAR(6),IN AD_ID INT,IN RATE INT,IN PLAYBACK TEXT,IN UPDT BOOLEAN)
 
 BEGIN
 
-    SET @Q = CONCAT('INSERT INTO ',TAB,' (AD_ID,RATE) VALUES (?,?)');
+    SET @Q = CONCAT('INSERT INTO ',TAB,' (AD_ID,RATE,PLAYBACK) VALUES (?,?,?)');
 
     PREPARE STM FROM @Q;
 
-    SET @AD_ID = AD_ID, @RATE = RATE;
+    SET @AD_ID = AD_ID, @RATE = RATE, @PLAYBACK = PLAYBACK;
 
-    EXECUTE STM USING @AD_ID,@RATE;
+    EXECUTE STM USING @AD_ID,@RATE,@PLAYBACK;
 
     DEALLOCATE PREPARE STM;
 
@@ -275,9 +282,9 @@ BEGIN
 
         SET @MIN = (SELECT MIN_AD_RATE FROM PLAYLISTS WHERE AD_TABLE_NAME = TAB);
 
-        IF((IRATE < @MIN OR @MIN = 0) AND IRATE > 0) THEN
+        IF((@RATE < @MIN OR @MIN = 0) AND @RATE > 0) THEN
 
-            UPDATE PLAYLISTS SET MIN_AD_RATE = IRATE WHERE AD_TABLE_NAME = TAB;
+            UPDATE PLAYLISTS SET MIN_AD_RATE = @RATE WHERE AD_TABLE_NAME = TAB;
 
         END IF;
         
@@ -328,6 +335,27 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
+CREATE PROCEDURE ss_ADS_UPD(IN ITOPIC TEXT,IN IFL_NAME VARCHAR(40),IN INID INT)
+
+BEGIN
+
+    SET @AD = (SELECT FL_NAME FROM ADS WHERE ID = INID);
+
+    IF (@AD IS NOT NULL) THEN
+
+        UPDATE ADS SET TOPIC = ITOPIC,FL_NAME = IFL_NAME
+            WHERE ID = INID;
+
+        SELECT @AD FL_NAME;
+
+    ELSE
+
+        SELECT NULL FL_NAME;
+    
+    END IF;
+
+END $$
+#-----------------------------------------------------------------------------------------------------------------
 CREATE PROCEDURE ss_PLAYLISTS_UPD(IN ILIST_NAME TEXT, IN IADS BIT,IN INID INT)
 
 BEGIN
@@ -353,25 +381,25 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
-CREATE PROCEDURE ss_ATX_UPD(IN TAB VARCHAR(6),IN IAD_ID INT,IN IRATE INT)
+CREATE PROCEDURE ss_ATX_UPD(IN TAB VARCHAR(6),IN IAD_ID INT,IN IRATE INT,IN IPLAYBACK TEXT)
 
 BEGIN
 
-    SET @Q = CONCAT('UPDATE ',TAB,' SET AD_ID = ?, RATE = ?');
+    SET @Q = CONCAT('UPDATE ',TAB,' SET AD_ID = ?, RATE = ?, PLAYBACK = ?');
 
     PREPARE STM FROM @Q;
 
-    SET @IAD_ID = IAD_ID, @IRATE = IRATE;
+    SET @IAD_ID = IAD_ID, @IRATE = IRATE, @IPLAYBACK = IPLAYBACK;
 
-    EXECUTE STM USING @IAD_ID,@IRATE;
+    EXECUTE STM USING @IAD_ID,@IRATE,@IPLAYBACK;
 
     DEALLOCATE PREPARE STM;
 
     SET @MIN = (SELECT MIN_AD_RATE FROM PLAYLISTS WHERE AD_TABLE_NAME = TAB);
 
-    IF((IRATE < @MIN OR  @MIN = 0) AND IRATE > 0) THEN
+    IF((@IRATE < @MIN OR  @MIN = 0) AND @IRATE > 0) THEN
 
-        UPDATE PLAYLISTS SET MIN_AD_RATE = IRATE WHERE AD_TABLE_NAME = TAB;
+        UPDATE PLAYLISTS SET MIN_AD_RATE = @IRATE WHERE AD_TABLE_NAME = TAB;
 
     END IF;
 
@@ -425,6 +453,26 @@ BEGIN
         DELETE FROM MUSIC WHERE ID = INID;
 
         SELECT @SONG FL_NAME;
+
+    ELSE
+
+        SELECT NULL FL_NAME;
+    
+    END IF;
+
+END $$
+#-----------------------------------------------------------------------------------------------------------------
+CREATE PROCEDURE ss_MUSIC_DEL(IN INID INT)
+
+BEGIN
+
+    SET @AD = (SELECT FL_NAME FROM ADS WHERE ID = INID);
+
+    IF (@AD IS NOT NULL) THEN 
+
+        DELETE FROM ADS WHERE ID = INID;
+
+        SELECT @AD FL_NAME;
 
     ELSE
 

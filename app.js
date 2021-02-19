@@ -186,7 +186,7 @@ async function createServer(i)
 
     app[i].get('/audio/:reg/:file/',core.audioMedia);
     
-    app[i].get('/playlist/:id/:track/',core.playlist);
+    app[i].get('/playlist/:id/:audio/:track/',core.playlist);
 
     app[i].get('*',core.routeError); 
 }
@@ -1572,6 +1572,7 @@ up.listen(uport, (error) =>
 up.post('/upload-audio', async (req, res) => 
 {
     let JSONEX = false;
+    
     try 
     {
         if(!req.files) 
@@ -1617,7 +1618,12 @@ up.post('/upload-audio', async (req, res) =>
 
                 let n = 0;
                 
-                let path = "./files/music/";
+                let path;
+                
+                if(details.audio && details.audio == "ad")
+                    path = "./files/ads/";
+                else
+                    path = "./files/music/";
             
                 let filename = details.filename;
                 
@@ -1689,13 +1695,26 @@ up.post('/upload-audio', async (req, res) =>
 
                             let dt = {};
 
-                            dt.FIELD1 = details.song;
+                            if(details.audio && details.audio == "ad")
+                            {
+                                dt.FIELD1 = details.topic;
 
-                            dt.FIELD2 = details.artist;
+                                dt.FIELD2 = file;
 
-                            dt.FIELD3 = file;
+                                Q = await SQL.INS("ADS", dt);
+                            }
+                            else
+                            {
+                                dt.FIELD1 = details.song;
 
-                            Q = await SQL.INS("MUSIC", dt);
+                                dt.FIELD2 = details.artist;
+
+                                dt.FIELD3 = details.genre;
+
+                                dt.FIELD4 = file;
+
+                                Q = await SQL.INS("MUSIC", dt);
+                            }
     
                             if(!Q.STATUS)
                                 Q = "SUCCEEDED ON MODIFYING DATABASE.";
@@ -1704,9 +1723,7 @@ up.post('/upload-audio', async (req, res) =>
 
                             flag = false;
                         }
-                
                     }
-                    
                     
                     //send response
                     res.status(200).send(

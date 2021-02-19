@@ -166,31 +166,86 @@ module.exports.playlist = (req,res) =>
 {	
 	let playlist = req.params.id;
 
-	let track = parseInt(req.params.track);
+  let type = req.params.type;
 
-	if (playlist && track && playlist!= "random")
+	let track = req.params.track; 
+
+	if (playlist && track && type)
 	{
-    let retrieved = false;
-    
-    let tracks, file;
+    let retrieved = false, file;
 
-    playlist = parseInt(playlist);
-    let Q = SQL.SEL("SONG_IDS","PLAYLISTS","ID",track,false);
-
-    if(!Q.STATUS && Q[0].SONG_IDS)
+    if(type == "music" && playlist!= "random")
     {
-      tracks = Q[0].SONG_IDS.split(',');
-
-      Q = SQL.SEL("FL_NAME","MUSIC","ID",tracks[track],false);
-
-      if(!Q.STATUS && Q[0].FL_NAME)
+  
+      playlist = parseInt(playlist);
+  
+      let Q = SQL.SEL("PL_TABLE_NAME","PLAYLISTS","ID",playlist,false);
+  
+      if(!Q.STATUS && Q[0] && Q[0].PL_TABLE_NAME)
       {
-        file = dir[1] + file;
+        let pl_tab = Q[0].PL_TABLE_NAME;
+  
+        Q = SQL.SEL("SONG_ID",pl_tab + " LIMIT 1," + track, "","",false);
+  
+        if(!Q.STATUS && Q[0] && Q[0].SONG_ID)
+        {
+          let song_id = Q[0].SONG_ID;
+
+          Q = SQL.SEL("FL_NAME","MUSIC","ID",song_id,false);
+
+          if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
+          {
+            file = dir[1] + Q[0].FL_NAME;
+    
+            retrieved = true;
+          }
+        } 
+      } 
+    }
+    else if(type == "music")
+    {
+      playlist = parseInt(playlist);
+      
+      if(track == '0')
+        track == '1';
+      
+      let Q = SQL.SEL("FL_NAME","MUSIC LIMIT 1," + track,"","",false);
+
+      if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
+      {
+        file = dir[1] + Q[0].FL_NAME;
 
         retrieved = true;
-      }
+      }  
     }
+    else if(type == "ad")
+    {
+      playlist = parseInt(playlist);
+  
+      let Q = SQL.SEL("AD_TABLE_NAME","PLAYLISTS","ID",playlist,false);
+  
+      if(!Q.STATUS && Q[0] && Q[0].AD_TABLE_NAME)
+      {
+        let ad_tab = Q[0].AD_TABLE_NAME;
+  
+        Q = SQL.SEL("AD_ID",ad_tab + " LIMIT 1," + track, "","",false);
+  
+        if(!Q.STATUS && Q[0] && Q[0].SONG_ID)
+        {
+          let ad_id = Q[0].AD_ID;
 
+          Q = SQL.SEL("FL_NAME","ADS","ID",ad_id,false);
+
+          if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
+          {
+            file = dir[1] + Q[0].FL_NAME;
+    
+            retrieved = true;
+          }
+        } 
+      } 
+    }
+    
     if(retrieved)
     {
       let statFile;
