@@ -210,11 +210,53 @@ module.exports.INS = async function INS(TAB,COL)
 
   let prefix = TAB.slice(0,2);
 
+  let songs = null, rates = null;
+
   if(prefix != "AT" && prefix != "PT")
-  {
+  {  
+    if(TAB == "PLAYLISTS")
+    {
+      if(COL.FIELD3)
+      {
+        songs = COL.FIELD3.split(',');
+
+        let len = songs.length; 
+        
+        COL.FIELD3 = len;
+      }
+
+      if(COL.FIELD2 == "TRUE")
+      {
+        COL.FIELD2 = true;
+
+        if(COL.FIELD4 && COL.FIELD5)
+        {
+          rates = COL.FIELD4.split(',');
+
+          let len = songs.length; 
+          
+          let min = 0, r = 0;
+
+          for(let i = 0; i < len; i++)
+          {
+            r = parseInte(rates[i]);
+
+            if((r < min && r > 0) || min == 0)
+              min = r;
+          }
+
+          COL.FIELD4 = min;
+        }
+      }
+    }
+    
+    let c;
+
     for(let i = 0; i < keys.length; i++)
     {
-      if(keys[i] != "TARGET" && keys[i] != "TOKEN")
+      c = (TAB == "PLAYLISTS" && keys[i] == "FIELD5");
+
+      if(keys[i] != "TARGET" && keys[i] != "TOKEN" && !c)
       { 
         if(isNaN(COL[keys[i]]))
           COL[keys[i]] = purify(COL[keys[i]]);
@@ -229,6 +271,7 @@ module.exports.INS = async function INS(TAB,COL)
         params.push(COL[keys[i]]);
       }     
     }
+
   }
   else
   {
@@ -330,13 +373,10 @@ module.exports.INS = async function INS(TAB,COL)
         
         if(COL.FIELD2 && COL.FIELD4  && COL.FIELD5)
         {
-          let ads = COL.FIELD4.split(',');
+          let ads = COL.FIELD5.split(',');
 
-          let rates = COL.FIELD4.split(',');
-        
           let len = ads.length;
 
-          
           Q = "CALL ss_ATX_INS(?,?,?,?)";
 
           if(X)

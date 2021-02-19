@@ -192,7 +192,7 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
-CREATE PROCEDURE ss_PLAYLISTS_INS(IN LIST_NAME TEXT,IN ADS BIT,IN MIN_AD_RATE INT,IN TRACKS INT)
+CREATE PROCEDURE ss_PLAYLISTS_INS(IN LIST_NAME TEXT,IN TRACKS INT,IN ADS BIT,IN MIN_AD_RATE INT)
 
 BEGIN
 
