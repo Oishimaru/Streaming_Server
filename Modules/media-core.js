@@ -3,7 +3,7 @@ const { parse } = require('path');
 
 const util = require('util');
 
-const SQL = require('./Modules/SQL.js');
+const SQL = require('./SQL.js');
 
 //Ruta para los archivos.
 const dir  = ["./files/default/","./files/music/","./files/ads/"];
