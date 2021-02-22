@@ -1346,10 +1346,14 @@ client.on("message", (topic, message) =>
                 /*
                 {
                     "ACTION":"START",
-                    "HOST":"192.0.0.1",
+                    "HOST":"192.168.0.103",
                     "PORT":3400,
-                    "PATH":"/audio/1/andrew_rayel_impulse.mp3"
-                }
+                    "PATH":"/audio/0/default.mp3" OR "/audio/1/song.mp3" OR "/audio/2/ad.mp3" 
+                    OR playlist/id/music/track" OR "playlist/id/ads/track" OR playlist/random/music/track,
+                    "TRACKS":NUM,
+                    "RANDOM":TRUE OR FALSE
+                    
+                } need to change how default id works: RANDOM or UNReGISTERED for non database tags
                 */
                 client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
                 

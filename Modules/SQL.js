@@ -210,7 +210,7 @@ module.exports.INS = async function INS(TAB,COL)
 
   let prefix = TAB.slice(0,2);
 
-  let songs = null, rates = null;
+  let songs = null, ads = null, rates = null;
 
   if(prefix != "AT" && prefix != "PT")
   {  
@@ -224,16 +224,20 @@ module.exports.INS = async function INS(TAB,COL)
         
         COL.FIELD3 = len;
       }
+      else
+        COL.FIELD3 = 0;
 
       if(COL.FIELD2 == "TRUE")
       {
         COL.FIELD2 = true;
 
-        if(COL.FIELD4 && COL.FIELD5)
+        if(COL.FIELD4 && COL.FIELD5 && COL.FIELD6)
         {
           rates = COL.FIELD4.split(',');
 
-          let len = songs.length; 
+          ads = COL.FIELD5.split(',');
+
+          let len = ads.length; 
           
           let min = 0, r = 0;
 
@@ -246,7 +250,24 @@ module.exports.INS = async function INS(TAB,COL)
           }
 
           COL.FIELD4 = min;
+
+          COL.FIELD5 = len;
         }
+        else
+        {
+          COL.FIELD2 = false;
+          
+          COL.FIELD4 = 0;
+
+          COL.FIELD5 = 0;
+        }
+      }
+      else
+      {
+        COL.FIELD
+        COL.FIELD4 = 0;
+
+        COL.FIELD5 = 0;
       }
     }
     
@@ -254,7 +275,7 @@ module.exports.INS = async function INS(TAB,COL)
 
     for(let i = 0; i < keys.length; i++)
     {
-      c = (TAB == "PLAYLISTS" && keys[i] == "FIELD5");
+      c = (TAB == "PLAYLISTS" && keys[i] == "FIELD6");
 
       if(keys[i] != "TARGET" && keys[i] != "TOKEN" && !c)
       { 
@@ -373,8 +394,6 @@ module.exports.INS = async function INS(TAB,COL)
         
         if(COL.FIELD2 && COL.FIELD4  && COL.FIELD5 && COL.FIELD6)
         {
-          let ads = COL.FIELD5.split(',');
-
           let pb = COL.FIELD6.split(',');
 
           let len = ads.length;

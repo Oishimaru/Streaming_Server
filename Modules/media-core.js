@@ -6,7 +6,7 @@ const util = require('util');
 const SQL = require('./Modules/SQL.js');
 
 //Ruta para los archivos.
-const dir  = ["./files/default/","./files/music/"];
+const dir  = ["./files/default/","./files/music/","./files/ads/"];
 
 async function errorLog(prefix,error,num)
 {
@@ -218,7 +218,7 @@ module.exports.playlist = (req,res) =>
         retrieved = true;
       }  
     }
-    else if(type == "ad")
+    else if(type == "ads")
     {
       playlist = parseInt(playlist);
   
@@ -238,7 +238,7 @@ module.exports.playlist = (req,res) =>
 
           if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
           {
-            file = dir[1] + Q[0].FL_NAME;
+            file = dir[2] + Q[0].FL_NAME;
     
             retrieved = true;
           }
