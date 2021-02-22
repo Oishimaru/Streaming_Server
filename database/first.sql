@@ -465,7 +465,7 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
-CREATE PROCEDURE ss_MUSIC_DEL(IN INID INT)
+CREATE PROCEDURE ss_ADS_DEL(IN INID INT)
 
 BEGIN
 
