@@ -956,7 +956,10 @@ client.on("message", (topic, message) =>
                                         loaded = true;
                                     }
 
-                                    ST +=",\"DEFAULT\":\"" + def + "\""
+                                    if(isNaN(def))
+                                        ST +=",\"DEFAULT\":\"" + def + "\"";
+                                    else
+                                        ST +=",\"DEFAULT\":" + def;
                                 }
                             }
                             else
@@ -971,13 +974,25 @@ client.on("message", (topic, message) =>
 
                             console.log("");
                             
-                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
+                            let prefix = data.TARGET.slice(0,2);
+                            let sufix = data.TARGET.slice(2);
+
+                            if(prefix == "PT" || prefix == "AT")
+                                Q = "{\"" + prefix + "X\":" +  JSON.stringify(Q) + ",\"X\":" + sufix +"," + ST + "}";
+                            else
+                                Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
                         }  
                         else
                         {
                             ST = "\"STATUS\":\"FAILURE\",\"MESSAGE\":" + JSON.stringify(Q);
-                            
-                            Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
+
+                            let prefix = data.TARGET.slice(0,2);
+                            let sufix = data.TARGET.slice(2);
+
+                            if(prefix == "PT" || prefix == "AT")
+                                Q = "{\"" + prefix + "X\":[],\"X\":" + sufix + "," + ST + "}";
+                            else
+                                Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
                         }
 
                         client.publish(outgoing[4],Q);
@@ -1094,7 +1109,7 @@ client.on("message", (topic, message) =>
 
                         let Q;
 
-                        if( !(data.TARGET == "MUSIC" && (id == "1" || id == "2") ) )
+                        if( !(data.TARGET == "MUSIC" && (id == "1") ) )
                         {
                             Q = await SQL.DEL(data.TARGET, id);
 
@@ -1114,9 +1129,9 @@ client.on("message", (topic, message) =>
                         
                             if(data.TARGET == "MUSIC" && def == data.FIELD1)
                             {
-                                await setDefaultSong("1");
+                                await setDefaultSong("random");
 
-                                def = "1";
+                                def = "random";
                             }
                             
                             console.log("RESPONSE TOPIC: " + outgoing[4]);
@@ -1162,6 +1177,9 @@ client.on("message", (topic, message) =>
                 {
                     if(TOKEN && data.TOKEN == TOKEN)
                     {
+                        if(data.ID != "random" || data.ID != "default")
+                            data.ID = parseInt(data.ID);
+                            
                         output = await setDefaultSong(data.ID);
 
                         client.publish(outgoing[4],JSON.stringify(output));
@@ -1264,10 +1282,8 @@ client.on("message", (topic, message) =>
         {
             let HOST = "192.168.0.103";
 
-            let PORT;
+            let PORT, PATH = [], TRACKS = 0, AD_TRACKS = 0, LIST_ID = null, RANDOM = false;
 
-            let PATH = "/audio";
-    
             let READER_ID =  ID[1];
             
             let Q = await SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","","",false);
@@ -1294,20 +1310,29 @@ client.on("message", (topic, message) =>
                 
                 if(Q1[0] && !Q1.STATUS)
                 {
-                    let SONG_ID = Q1[0].SONG_ID;
+                    LIST_ID = Q1[0].LIST_ID;
         
-                    Q2 = await SQL.SEL("*","MUSIC","ID",SONG_ID,false);
+                    Q2 = await SQL.SEL("TRACKS,AD_TRACKS","PLAYLISTS","ID",LIST_ID,false);
 
                     if(Q2[0] && !Q2.STATUS)
-                        file = Q2[0].FL_NAME;
+                    {
+                        TRACKS = Q2[0].TRACKS;
+
+                        AD_TRACKS = Q2[0].TRACKS;
+                    }
                 }
     
-                if(file)
-                    PATH += "/1/" + file;
+                if(LIST_ID)
+                {
+                    if(TRACKS > 0)
+                        PATH.push = "/playlist/" + LIST_ID + "/music/0";
+
+                    if(AD_TRACKS > 0)
+                        PATH.push = "/playlist/" + LIST_ID + "/ads/0";
+                }         
                 else
                 {
-                    
-                    let SONG_ID;
+                    let OP;
 
                     if(!loaded)
                     {
@@ -1317,31 +1342,54 @@ client.on("message", (topic, message) =>
 
                         loaded = true;
                     }
-                       
-                    SONG_ID = def;
 
-                    if(SONG_ID == "1")
-                        PATH += "/0/default.mp3";
-                    else if(SONG_ID == "2")
-                        PATH += "/0/Rick Rolling.mp3";
-                    else
+                    OP = def;
+
+                    if(!isNaN(OP))
                     {
-                        Q2 = await SQL.SEL("*","MUSIC","ID",SONG_ID,false);
+                        Q2 = await SQL.SEL("*","PLAYLISTS","ID",OP,false);
 
                         if(Q2[0] && !Q2.STATUS)
                         {
-                            file = Q2[0].FL_NAME;
+                            TRACKS = Q2[0].TRACKS;
 
-                            PATH += "/1/" + file;
+                            AD_TRACKS = Q2[0].TRACKS;
+
+                            if(TRACKS > 0)
+                                PATH.push = "/playlist/" + LIST_ID + "/music/0";
+
+                            if(AD_TRACKS > 0)
+                                PATH.push = "/playlist/" + LIST_ID + "/ads/0";
+
                         }
                         else
-                            PATH += "/0/default.mp3";
-                            
+                            PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.                 
                     }
+                    else
+                    {
+                        if(OP == "random")
+                        {                         
+                            Q2 = await SQL.SEL("ID","MUSIC","","",false);
+
+                            if(Q2[0] && !Q2.STATUS)
+                            {
+                                TRACKS = Q2.length;
+
+                                RANDOM = true;
+
+                                PATH.push = "/playlist/random/music/0";
+                            }
+                            else
+                                PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.     
+                        }
+                        else if(OP == "default")
+                            PATH.push = "audio/0/default.mp3";
+                    }
+                  
                 }
-                    
-    
-                PATH = encodeURI(PATH);
+                  
+                for(let i = 0; i < PATH.length; i++)
+                    PATH[i] = encodeURI(PATH[i]);
     
                 /*
                 {
@@ -1367,7 +1415,7 @@ client.on("message", (topic, message) =>
                     
                     console.log("Last try...");
                     
-                    console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                    console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH,TRACKS,AD_TRACKS,RANDOM}));
                 },5000);
             
             }
@@ -1505,9 +1553,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const _ = require('lodash');
-const { random, intersection } = require('lodash');
+const { random, intersection, forIn } = require('lodash');
 const { Console } = require('console');
 const e = require('express');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
 /*************************VARIABLES AND INSTANCES*****************************/
 
