@@ -186,7 +186,7 @@ async function createServer(i)
 
     app[i].get('/audio/:reg/:file/',core.audioMedia);
     
-    app[i].get('/playlist/:id/:track/',core.playlist);
+    app[i].get('/playlist/:id/:audio/:track/',core.playlist);
 
     app[i].get('*',core.routeError); 
 }
@@ -394,7 +394,7 @@ var info = false, block = false;
 var dataStream_R = [];
 var dataStream_S = [];
 
-var def = "1";
+var def = -1;
 
 var loaded = false;
 
@@ -410,7 +410,7 @@ async function  loadFile(filename)
 
     let exists = util.promisify(fs.access);
     
-    let info;
+    let info = null;
 
     let e;
 
@@ -450,7 +450,7 @@ async function  loadFile(filename)
         {
             console.log(" with default song id.");
 
-            data = {"ID":"1"};
+            data = {"ID":-1};
         }        
 
         data = JSON.stringify(data);
@@ -459,25 +459,35 @@ async function  loadFile(filename)
         {
             await writeFile(filename,data);
 
-            console.log(filename + " succesfully created.")
+            console.log(filename + " succesfully created.");
+
+            info = data;
+
         }
         catch(error) //2
         {
            errorLog("",error,2);
         }
-
-        info = data;
     }
     
-    let output = JSON.parse(info.toString());
-    process.stdout.write("Stored Credentials: ");
+    let output = null;
 
-    console.log(output);
+    if(info)
+    {
+        output = JSON.parse(info.toString());
+        
+        if(filename == "credentials.txt")
+            process.stdout.write("Stored Credentials: ");
+        else if(filename == "default.txt")
+            process.stdout.write("Stored Default: ");
 
+        console.log(output);
+    }
+   
     return output;   
 }
 
-async function setDefaultSong(ID)
+async function setDefaultList(ID)
 {
     let writeFile = util.promisify(fs.writeFile);
     
@@ -729,8 +739,7 @@ client.on("message", (topic, message) =>
 
                         //dataStream_R = [];
                         //dataStream_S = [];
-    
-                        
+
                         dataStream_R = [
                                             {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
                                             {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
@@ -945,7 +954,7 @@ client.on("message", (topic, message) =>
 
                                 console.log("\n\rList was successfully retrived.\n\r");
 
-                                if(data.TARGET == "MUSIC")
+                                if(data.TARGET == "PLAYLISTS")
                                 {
                                     if(!loaded)
                                     {
@@ -955,8 +964,8 @@ client.on("message", (topic, message) =>
 
                                         loaded = true;
                                     }
-
-                                    ST +=",\"DEFAULT\":\"" + def + "\""
+                                    
+                                    ST +=",\"DEFAULT\":" + def;
                                 }
                             }
                             else
@@ -971,13 +980,25 @@ client.on("message", (topic, message) =>
 
                             console.log("");
                             
-                            Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
+                            let prefix = data.TARGET.slice(0,2);
+                            let sufix = data.TARGET.slice(2);
+
+                            if(prefix == "PT" || prefix == "AT")
+                                Q = "{\"" + prefix + "X\":" +  JSON.stringify(Q) + ",\"X\":" + sufix +"," + ST + "}";
+                            else
+                                Q = "{\"" + data.TARGET + "\":" +  JSON.stringify(Q) + "," + ST + "}";
                         }  
                         else
                         {
                             ST = "\"STATUS\":\"FAILURE\",\"MESSAGE\":" + JSON.stringify(Q);
-                            
-                            Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
+
+                            let prefix = data.TARGET.slice(0,2);
+                            let sufix = data.TARGET.slice(2);
+
+                            if(prefix == "PT" || prefix == "AT")
+                                Q = "{\"" + prefix + "X\":[],\"X\":" + sufix + "," + ST + "}";
+                            else
+                                Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
                         }
 
                         client.publish(outgoing[4],Q);
@@ -1094,7 +1115,7 @@ client.on("message", (topic, message) =>
 
                         let Q;
 
-                        if( !(data.TARGET == "MUSIC" && (id == "1" || id == "2") ) )
+                        if( !(data.TARGET == "MUSIC" && (id == "1") ) )
                         {
                             Q = await SQL.DEL(data.TARGET, id);
 
@@ -1114,9 +1135,9 @@ client.on("message", (topic, message) =>
                         
                             if(data.TARGET == "MUSIC" && def == data.FIELD1)
                             {
-                                await setDefaultSong("1");
+                                await setDefaultList(-1);
 
-                                def = "1";
+                                def =  -1;
                             }
                             
                             console.log("RESPONSE TOPIC: " + outgoing[4]);
@@ -1162,7 +1183,10 @@ client.on("message", (topic, message) =>
                 {
                     if(TOKEN && data.TOKEN == TOKEN)
                     {
-                        output = await setDefaultSong(data.ID);
+                        if(data.ID != "random" || data.ID != "default")
+                            data.ID = parseInt(data.ID);
+                            
+                        output = await setDefaultList(data.ID);
 
                         client.publish(outgoing[4],JSON.stringify(output));
                     }
@@ -1172,6 +1196,8 @@ client.on("message", (topic, message) =>
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                     
                 });
+
+                break;
             }
 
             case "STORAGE_INFO":
@@ -1187,6 +1213,8 @@ client.on("message", (topic, message) =>
                     else
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                 });
+
+                break;
             }
 
             case "CREDENTIALS":
@@ -1254,6 +1282,7 @@ client.on("message", (topic, message) =>
                     }   
                 });
 
+                break;
             }
         }
 
@@ -1264,10 +1293,8 @@ client.on("message", (topic, message) =>
         {
             let HOST = "192.168.0.103";
 
-            let PORT;
+            let PORT, PATH = [], TRACKS = 0, AD_TRACKS = 0, LIST_ID = null, RANDOM = false;
 
-            let PATH = "/audio";
-    
             let READER_ID =  ID[1];
             
             let Q = await SQL.SEL("*","ROOMS WHERE READER_ID = '" + READER_ID + "'","","",false);
@@ -1294,20 +1321,29 @@ client.on("message", (topic, message) =>
                 
                 if(Q1[0] && !Q1.STATUS)
                 {
-                    let SONG_ID = Q1[0].SONG_ID;
+                    LIST_ID = Q1[0].LIST_ID;
         
-                    Q2 = await SQL.SEL("*","MUSIC","ID",SONG_ID,false);
+                    Q2 = await SQL.SEL("TRACKS,AD_TRACKS","PLAYLISTS","ID",LIST_ID,false);
 
                     if(Q2[0] && !Q2.STATUS)
-                        file = Q2[0].FL_NAME;
+                    {
+                        TRACKS = Q2[0].TRACKS;
+
+                        AD_TRACKS = Q2[0].TRACKS;
+                    }
                 }
     
-                if(file)
-                    PATH += "/1/" + file;
+                if(LIST_ID)
+                {
+                    if(TRACKS > 0)
+                        PATH.push = "/playlist/" + LIST_ID + "/music/0";
+
+                    if(AD_TRACKS > 0)
+                        PATH.push = "/playlist/" + LIST_ID + "/ads/0";
+                }         
                 else
                 {
-                    
-                    let SONG_ID;
+                    let OP;
 
                     if(!loaded)
                     {
@@ -1317,39 +1353,66 @@ client.on("message", (topic, message) =>
 
                         loaded = true;
                     }
-                       
-                    SONG_ID = def;
 
-                    if(SONG_ID == "1")
-                        PATH += "/0/default.mp3";
-                    else if(SONG_ID == "2")
-                        PATH += "/0/Rick Rolling.mp3";
-                    else
+                    OP = def;
+
+                    if(OP > 0)
                     {
-                        Q2 = await SQL.SEL("*","MUSIC","ID",SONG_ID,false);
+                        Q2 = await SQL.SEL("*","PLAYLISTS","ID",OP,false);
 
                         if(Q2[0] && !Q2.STATUS)
                         {
-                            file = Q2[0].FL_NAME;
+                            TRACKS = Q2[0].TRACKS;
 
-                            PATH += "/1/" + file;
+                            AD_TRACKS = Q2[0].TRACKS;
+
+                            if(TRACKS > 0)
+                                PATH.push = "/playlist/" + LIST_ID + "/music/0";
+
+                            if(AD_TRACKS > 0)
+                                PATH.push = "/playlist/" + LIST_ID + "/ads/0";
+
                         }
                         else
-                            PATH += "/0/default.mp3";
-                            
+                            PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.                 
                     }
+                    else
+                    {
+                        if(OP < 0)
+                        {                         
+                            Q2 = await SQL.SEL("ID","MUSIC","","",false);
+
+                            if(Q2[0] && !Q2.STATUS)
+                            {
+                                TRACKS = Q2.length;
+
+                                RANDOM = true;
+
+                                PATH.push = "/playlist/random/music/0";
+                            }
+                            else
+                                PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.     
+                        }
+                        else
+                            PATH.push = "audio/0/default.mp3";
+                    }
+                  
                 }
-                    
-    
-                PATH = encodeURI(PATH);
+                  
+                for(let i = 0; i < PATH.length; i++)
+                    PATH[i] = encodeURI(PATH[i]);
     
                 /*
                 {
                     "ACTION":"START",
-                    "HOST":"192.0.0.1",
+                    "HOST":"192.168.0.103",
                     "PORT":3400,
-                    "PATH":"/audio/1/andrew_rayel_impulse.mp3"
-                }
+                    "PATH":"/audio/0/default.mp3" OR "/audio/1/song.mp3" OR "/audio/2/ad.mp3" 
+                    OR playlist/id/music/track" OR "playlist/id/ads/track" OR playlist/random/music/track,
+                    "TRACKS":NUM,
+                    "RANDOM":TRUE OR FALSE
+                    
+                } need to change how default id works: RANDOM or UNReGISTERED for non database tags
                 */
                 client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
                 
@@ -1363,7 +1426,7 @@ client.on("message", (topic, message) =>
                     
                     console.log("Last try...");
                     
-                    console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                    console.log("[" + outgoing[2] + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH,TRACKS,AD_TRACKS,RANDOM}));
                 },5000);
             
             }
@@ -1501,9 +1564,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const _ = require('lodash');
-const { random, intersection } = require('lodash');
+const { random, intersection, forIn } = require('lodash');
 const { Console } = require('console');
 const e = require('express');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
 /*************************VARIABLES AND INSTANCES*****************************/
 
@@ -1572,6 +1636,7 @@ up.listen(uport, (error) =>
 up.post('/upload-audio', async (req, res) => 
 {
     let JSONEX = false;
+    
     try 
     {
         if(!req.files) 
@@ -1617,7 +1682,12 @@ up.post('/upload-audio', async (req, res) =>
 
                 let n = 0;
                 
-                let path = "./files/music/";
+                let path;
+                
+                if(details.audio && details.audio == "ad")
+                    path = "./files/ads/";
+                else
+                    path = "./files/music/";
             
                 let filename = details.filename;
                 
@@ -1689,13 +1759,26 @@ up.post('/upload-audio', async (req, res) =>
 
                             let dt = {};
 
-                            dt.FIELD1 = details.song;
+                            if(details.audio && details.audio == "ad")
+                            {
+                                dt.FIELD1 = details.topic;
 
-                            dt.FIELD2 = details.artist;
+                                dt.FIELD2 = file;
 
-                            dt.FIELD3 = file;
+                                Q = await SQL.INS("ADS", dt);
+                            }
+                            else
+                            {
+                                dt.FIELD1 = details.song;
 
-                            Q = await SQL.INS("MUSIC", dt);
+                                dt.FIELD2 = details.artist;
+
+                                dt.FIELD3 = details.genre;
+
+                                dt.FIELD4 = file;
+
+                                Q = await SQL.INS("MUSIC", dt);
+                            }
     
                             if(!Q.STATUS)
                                 Q = "SUCCEEDED ON MODIFYING DATABASE.";
@@ -1704,9 +1787,7 @@ up.post('/upload-audio', async (req, res) =>
 
                             flag = false;
                         }
-                
                     }
-                    
                     
                     //send response
                     res.status(200).send(

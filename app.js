@@ -394,7 +394,7 @@ var info = false, block = false;
 var dataStream_R = [];
 var dataStream_S = [];
 
-var def = "1";
+var def = -1;
 
 var loaded = false;
 
@@ -410,7 +410,7 @@ async function  loadFile(filename)
 
     let exists = util.promisify(fs.access);
     
-    let info;
+    let info = null;
 
     let e;
 
@@ -450,7 +450,7 @@ async function  loadFile(filename)
         {
             console.log(" with default song id.");
 
-            data = {"ID":"1"};
+            data = {"ID":-1};
         }        
 
         data = JSON.stringify(data);
@@ -459,25 +459,35 @@ async function  loadFile(filename)
         {
             await writeFile(filename,data);
 
-            console.log(filename + " succesfully created.")
+            console.log(filename + " succesfully created.");
+
+            info = data;
+
         }
         catch(error) //2
         {
            errorLog("",error,2);
         }
-
-        info = data;
     }
     
-    let output = JSON.parse(info.toString());
-    process.stdout.write("Stored Credentials: ");
+    let output = null;
 
-    console.log(output);
+    if(info)
+    {
+        output = JSON.parse(info.toString());
+        
+        if(filename == "credentials.txt")
+            process.stdout.write("Stored Credentials: ");
+        else if(filename == "default.txt")
+            process.stdout.write("Stored Default: ");
 
+        console.log(output);
+    }
+   
     return output;   
 }
 
-async function setDefaultSong(ID)
+async function setDefaultList(ID)
 {
     let writeFile = util.promisify(fs.writeFile);
     
@@ -945,7 +955,7 @@ client.on("message", (topic, message) =>
 
                                 console.log("\n\rList was successfully retrived.\n\r");
 
-                                if(data.TARGET == "MUSIC")
+                                if(data.TARGET == "PLAYLISTS")
                                 {
                                     if(!loaded)
                                     {
@@ -955,11 +965,8 @@ client.on("message", (topic, message) =>
 
                                         loaded = true;
                                     }
-
-                                    if(isNaN(def))
-                                        ST +=",\"DEFAULT\":\"" + def + "\"";
-                                    else
-                                        ST +=",\"DEFAULT\":" + def;
+                                    
+                                    ST +=",\"DEFAULT\":" + def;
                                 }
                             }
                             else
@@ -1129,9 +1136,9 @@ client.on("message", (topic, message) =>
                         
                             if(data.TARGET == "MUSIC" && def == data.FIELD1)
                             {
-                                await setDefaultSong("random");
+                                await setDefaultList(-1);
 
-                                def = "random";
+                                def =  -1;
                             }
                             
                             console.log("RESPONSE TOPIC: " + outgoing[4]);
@@ -1180,7 +1187,7 @@ client.on("message", (topic, message) =>
                         if(data.ID != "random" || data.ID != "default")
                             data.ID = parseInt(data.ID);
                             
-                        output = await setDefaultSong(data.ID);
+                        output = await setDefaultList(data.ID);
 
                         client.publish(outgoing[4],JSON.stringify(output));
                     }
@@ -1190,6 +1197,8 @@ client.on("message", (topic, message) =>
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                     
                 });
+
+                break;
             }
 
             case "STORAGE_INFO":
@@ -1205,6 +1214,8 @@ client.on("message", (topic, message) =>
                     else
                         client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
                 });
+
+                break;
             }
 
             case "CREDENTIALS":
@@ -1272,6 +1283,7 @@ client.on("message", (topic, message) =>
                     }   
                 });
 
+                break;
             }
         }
 
@@ -1345,7 +1357,7 @@ client.on("message", (topic, message) =>
 
                     OP = def;
 
-                    if(!isNaN(OP))
+                    if(OP > 0)
                     {
                         Q2 = await SQL.SEL("*","PLAYLISTS","ID",OP,false);
 
@@ -1367,7 +1379,7 @@ client.on("message", (topic, message) =>
                     }
                     else
                     {
-                        if(OP == "random")
+                        if(OP < 0)
                         {                         
                             Q2 = await SQL.SEL("ID","MUSIC","","",false);
 
@@ -1382,7 +1394,7 @@ client.on("message", (topic, message) =>
                             else
                                 PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.     
                         }
-                        else if(OP == "default")
+                        else
                             PATH.push = "audio/0/default.mp3";
                     }
                   
