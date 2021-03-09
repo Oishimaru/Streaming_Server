@@ -738,8 +738,8 @@ client.on("message", (topic, message) =>
                         info = true;
 
                         //dataStream_R = [];
-                        //dataStream_S = [];
-
+                        //dataStream_S = [];    
+                        
                         dataStream_R = [
                                             {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
                                             {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
@@ -1332,14 +1332,23 @@ client.on("message", (topic, message) =>
                         AD_TRACKS = Q2[0].TRACKS;
                     }
                 }
-    
+                
+                console.log("LIST_ID:" + LIST_ID);
+
                 if(LIST_ID)
                 {
+                    console.log("TRACKS:" + TRACKS);
+
                     if(TRACKS > 0)
-                        PATH.push = "/playlist/" + LIST_ID + "/music/0";
+                        PATH.push("/playlist/" + LIST_ID.toString() + "/music");
 
                     if(AD_TRACKS > 0)
-                        PATH.push = "/playlist/" + LIST_ID + "/ads/0";
+                        PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
+
+                    process.stdout.write("PATH:");
+
+                    console.log(PATH);
+
                 }         
                 else
                 {
@@ -1356,9 +1365,10 @@ client.on("message", (topic, message) =>
 
                     OP = def;
 
+                    console.log("default:" + OP);
                     if(OP > 0)
                     {
-                        Q2 = await SQL.SEL("*","PLAYLISTS","ID",OP,false);
+                        Q2 = await SQL.SEL("*","PLAYLISTS","ID",OP.toString(),false);
 
                         if(Q2[0] && !Q2.STATUS)
                         {
@@ -1366,12 +1376,17 @@ client.on("message", (topic, message) =>
 
                             AD_TRACKS = Q2[0].TRACKS;
 
+                            console.log("TRACKS:" + TRACKS);
+
                             if(TRACKS > 0)
-                                PATH.push = "/playlist/" + LIST_ID + "/music/0";
+                                PATH.push("/playlist/" + LIST_ID.toString() + "/music");
 
                             if(AD_TRACKS > 0)
-                                PATH.push = "/playlist/" + LIST_ID + "/ads/0";
+                                PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
 
+                            process.stdout.write("PATH:");
+
+                            console.log(PATH);    
                         }
                         else
                             PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.                 
@@ -1388,13 +1403,13 @@ client.on("message", (topic, message) =>
 
                                 RANDOM = true;
 
-                                PATH.push = "/playlist/random/music/0";
+                                PATH.push("/playlist/random/music");
                             }
                             else
-                                PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.     
+                                PATH.push("audio/0/default.mp3"); //defaul2.mp3 No Playlist Found.     
                         }
                         else
-                            PATH.push = "audio/0/default.mp3";
+                            PATH.push("audio/0/default.mp3");
                     }
                   
                 }
@@ -1402,6 +1417,7 @@ client.on("message", (topic, message) =>
                 for(let i = 0; i < PATH.length; i++)
                     PATH[i] = encodeURI(PATH[i]);
     
+                PATH = PATH[0];
                 /*
                 {
                     "ACTION":"START",
@@ -1414,15 +1430,15 @@ client.on("message", (topic, message) =>
                     
                 } need to change how default id works: RANDOM or UNReGISTERED for non database tags
                 */
-                client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}));
+                client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH,TRACKS,RANDOM}));
                 
-                console.log("[" + outgoing[2]  + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH}));
+                console.log("[" + outgoing[2]  + SPEAKER_ID + "]: " + JSON.stringify({ACTION,HOST,PORT,PATH,TRACKS,RANDOM}));
                 
                 console.log("Trying again in 5 seconds...");
                 
                 play[index] = setTimeout(() =>
                 {
-                    client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH}))
+                    client.publish(outgoing[2] + SPEAKER_ID,JSON.stringify({ACTION,HOST,PORT,PATH,TRACKS,RANDOM}))
                     
                     console.log("Last try...");
                     
@@ -1650,23 +1666,39 @@ up.post('/upload-audio', async (req, res) =>
         else 
         {
             let details = {};
+
+            let regEX = /\\u0000|[\u0000]/g;
             
             console.log(req);
 
             try
             {
-                details = JSON.parse(req.body.details);
+                details = JSON.parse(req.body.details.toString().replace(regEX,''));
+
+                process.stdout.write("Parsed JSON: ");
+
+                console.log(details);
             }
             catch(error)
             {
+                console.log("Bad JSON.");
+
+                console.log(error);
+
                 JSONEX = true;
             }
             
             
             if(details.key && details.key == "hazard")
             {
+                console.log("TOKEN GENERATION.")
+
                 if(!TOKEN)
                     TOKEN = randomToken(16);
+
+                process.stdout.write("New Token: ");
+
+                console.log(TOKEN);
 
                 details.TOKEN = TOKEN;
             }
@@ -1840,6 +1872,12 @@ up.post('/upload-audio', async (req, res) =>
             else
             {
                 console.log("Invalid Token.");
+
+                process.stdout.write("Expected: ");
+                console.log(TOKEN);
+
+                process.stdout.write("Reveiced: ");
+                console.log(details.TOKEN);
 
                 res.status(401).send({STATUS:"INVALID"});
             }
