@@ -162,13 +162,16 @@ module.exports.audioMedia = (req,res) =>
 };
 
 
-module.exports.playlist = (req,res) => 
+module.exports.playlist = async (req,res) => 
 {	
 	let playlist = req.params.id;
 
-  let type = req.params.type;
+  let type = req.params.audio;
 
 	let track = req.params.track; 
+
+  process.stdout.write("Playlist Request: ");
+  console.log(req.url);
 
 	if (playlist && track && type)
 	{
@@ -176,22 +179,26 @@ module.exports.playlist = (req,res) =>
 
     if(type == "music" && playlist!= "random")
     {
-  
+      
+      process.stdout.write("Selected Playlist: ");
+     
       playlist = parseInt(playlist);
+
+      console.log(playlist);
   
-      let Q = SQL.SEL("PL_TABLE_NAME","PLAYLISTS","ID",playlist,false);
+      let Q = await SQL.SEL("PL_TABLE_NAME","PLAYLISTS","ID",playlist,false);
   
       if(!Q.STATUS && Q[0] && Q[0].PL_TABLE_NAME)
       {
         let pl_tab = Q[0].PL_TABLE_NAME;
   
-        Q = SQL.SEL("SONG_ID",pl_tab + " LIMIT 1," + track, "","",false);
+        Q = await SQL.SEL("SONG_ID",pl_tab + " LIMIT 1," + track, "","",false);
   
         if(!Q.STATUS && Q[0] && Q[0].SONG_ID)
         {
           let song_id = Q[0].SONG_ID;
 
-          Q = SQL.SEL("FL_NAME","MUSIC","ID",song_id,false);
+          Q = await SQL.SEL("FL_NAME","MUSIC","ID",song_id,false);
 
           if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
           {
@@ -204,12 +211,12 @@ module.exports.playlist = (req,res) =>
     }
     else if(type == "music")
     {
-      playlist = parseInt(playlist);
-      
+      console.log("Random song playback");
+
       if(track == '0')
         track == '1';
       
-      let Q = SQL.SEL("FL_NAME","MUSIC LIMIT 1," + track,"","",false);
+      let Q = await SQL.SEL("FL_NAME","MUSIC LIMIT 1," + track,"","",false);
 
       if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
       {
@@ -222,19 +229,19 @@ module.exports.playlist = (req,res) =>
     {
       playlist = parseInt(playlist);
   
-      let Q = SQL.SEL("AD_TABLE_NAME","PLAYLISTS","ID",playlist,false);
+      let Q = await SQL.SEL("AD_TABLE_NAME","PLAYLISTS","ID",playlist,false);
   
       if(!Q.STATUS && Q[0] && Q[0].AD_TABLE_NAME)
       {
         let ad_tab = Q[0].AD_TABLE_NAME;
   
-        Q = SQL.SEL("AD_ID",ad_tab + " LIMIT 1," + track, "","",false);
+        Q = await SQL.SEL("AD_ID",ad_tab + " LIMIT 1," + track, "","",false);
   
         if(!Q.STATUS && Q[0] && Q[0].SONG_ID)
         {
           let ad_id = Q[0].AD_ID;
 
-          Q = SQL.SEL("FL_NAME","ADS","ID",ad_id,false);
+          Q = await SQL.SEL("FL_NAME","ADS","ID",ad_id,false);
 
           if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
           {
@@ -246,13 +253,17 @@ module.exports.playlist = (req,res) =>
       } 
     }
     
+    console.log(file);
+
     if(retrieved)
     {
       let statFile;
 
+      console.log("file path successfully retrieved");
+
       try
       {
-        statFile = fs.statSync(file);
+        statFile = await fs.stat(file);
 
         //Armo headers.
         res.writeHead(200, {'Content-Type': 'audio/mpeg','Content-Length': statFile.size});
@@ -294,10 +305,6 @@ module.exports.playlist = (req,res) =>
       res.status(500).send({STATUS:"FAILURE",MESSAGE:message});
     }
 	}
-  else if(playlist == "random" && track)
-  {
-    
-  }
 	else
 	{
 		console.log("Bad request; file not specified.");

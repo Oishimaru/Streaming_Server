@@ -29,6 +29,16 @@ function DBconnection()
   return con;
 }
 
+async function createTrigger(id,DB)
+{
+  let T1 = "CREATE TRIGGER ON_PT" + id.toString() + "_DEL ";
+  let T2 = "AFTER DELETE ON PT" + id.toString() +  " FOR EACH ROW ";
+  let T3 = "UPDATE PLAYLISTS SET TRACKS = TRACKS - 1 WHERE PL_TABLE_NAME = 'PT" + id.toString() + "'; ";
+  let DEL1 = "DELIMITER $$ ", DEL2 = "DELIMITER ;";
+
+  await DB.promise().query(DEL1 + T1 + T2 + "BEGIN " + T3 + "END $$ " + DEL2);
+}
+
 function purify(str)
 {
   let aux = "";
@@ -401,7 +411,12 @@ module.exports.INS = async function INS(TAB,COL)
       r =[r[1]];
 
       if(X)
+      {
         r[0].affectedRows = 1;
+        
+        await createTrigger(X,DB);
+      }
+       
 
       if(COL.FIELD3)
       { 

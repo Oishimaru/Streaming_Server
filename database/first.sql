@@ -151,9 +151,57 @@ INSERT INTO TCP_PORTS (ID,PORT,PORT_STATUS)
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
     VALUES ('default','GOOGLE TRANSLATE','default.mp3');
 
-#------------------------------------------------PROCEDURES----------------------------------------------------------
+#-------------------------------------------------TRIGGERS-----------------------------------------------------------
 
 DELIMITER $$
+
+#-----------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER MUSIC_CASCADE
+
+AFTER DELETE ON MUSIC
+
+FOR EACH ROW
+
+BEGIN
+
+    SET @O = old.ID;
+
+    CREATE TEMPORARY TABLE IF NOT EXISTS PTX
+    (
+        ID INTEGER AUTO_INCREMENT,
+        PL_TABLE_NAME TEXT,
+
+        PRIMARY KEY (ID)
+    );
+
+    INSERT INTO PTX (PL_TABLE_NAME)
+        SELECT PL_TABLE_NAME FROM PLAYLISTS;
+    
+    SET @COUNTER = (SELECT COUNT(*) FROM PTX);
+
+    SET @n = LAST_INSERT_ID() + 1;
+
+    SET @i = @n - (@COUNTER - 1);
+
+    WHILE (@i < @n)
+    BEGIN
+
+        SET @TAB = (SELECT PL_TABLE_NAME FROM PTX WHERE ID = @i)
+
+        SET @i = @i + 1;
+
+        SET @Q = CONCAT('DELETE FROM ',@TAB,' WHERE SONG_ID = ?');
+
+        PREPARE STM FROM @Q;
+
+        EXECUTE STM USING @O;
+
+        DEALLOCATE PREPARE STM;
+
+    END
+
+END $$
+#------------------------------------------------PROCEDURES----------------------------------------------------------
 
 -- INSERT
 
@@ -215,9 +263,7 @@ BEGIN
     
     SET @FIELDS ='(ID INTEGER NOT NULL AUTO_INCREMENT,SONG_ID INTEGER NOT NULL,';
     
-    SET @CONSTRAINTS1 = CONCAT('PRIMARY KEY (ID),CONSTRAINT FK_SONG',@ID);
-    
-    SET @CONSTRAINTS2 = ' FOREIGN KEY (SONG_ID) REFERENCES MUSIC (ID) ON DELETE CASCADE)';
+    SET @CONSTRAINTS1 = CONCAT('PRIMARY KEY (ID)');
 
     SET @STM = CONCAT('CREATE TABLE ',@PL_TAB,@FIELDS,@CONSTRAINTS1,@CONSTRAINTS2);
     
@@ -229,11 +275,9 @@ BEGIN
 
     SET @FIELDS2 ='(ID INTEGER NOT NULL AUTO_INCREMENT,AD_ID INTEGER NOT NULL,RATE INTEGER NOT NULL,PLAYBACK TEXT NOT NULL,';
 
-    SET @CONSTRAINTS3 = CONCAT('PRIMARY KEY(ID),CONSTRAINT FK_ADS',@ID);
+    SET @CONSTRAINTS2 = CONCAT('PRIMARY KEY(ID)');
 
-    SET @CONSTRAINTS4 = ' FOREIGN KEY (AD_ID) REFERENCES ADS (ID) ON DELETE CASCADE)';
-
-    SET @STM2 = CONCAT("CREATE TABLE ",@AD_TAB,@FIELDS2,@CONSTRAINTS3,@CONSTRAINTS4);
+    SET @STM2 = CONCAT("CREATE TABLE ",@AD_TAB,@FIELDS2,@CONSTRAINTS2);
 
     PREPARE STM FROM @STM2;
 
@@ -241,7 +285,7 @@ BEGIN
 
     DEALLOCATE PREPARE STM;
 
-        -- PLAYBACK: START, DELAYED, ONCE_S, ONCE_D, NEVER
+    -- PLAYBACK: START, DELAYED, ONCE_S, ONCE_D, NEVER
 
     SELECT @ID ID;
 
