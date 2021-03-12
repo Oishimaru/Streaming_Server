@@ -14,6 +14,7 @@ const util = require('util');
 
 const { intersection } = require('lodash');
 const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG, SSL_OP_TLS_ROLLBACK_BUG } = require('constants');
+const { playlist } = require('./media-core');
 
 /*********************************FUNCTIONS***********************************/
 
@@ -29,14 +30,25 @@ function DBconnection()
   return con;
 }
 
+function DBsuper()
+{
+  var con = mysql.createConnection({
+  host: "localhost",
+  user: "super_orbittas",
+  password: "P4s5w0rd2++",
+  database: "STREAMING_SERVER"
+  });
+
+  return con;
+}
+
 async function createTrigger(id,DB)
 {
   let T1 = "CREATE TRIGGER ON_PT" + id.toString() + "_DEL ";
   let T2 = "AFTER DELETE ON PT" + id.toString() +  " FOR EACH ROW ";
   let T3 = "UPDATE PLAYLISTS SET TRACKS = TRACKS - 1 WHERE PL_TABLE_NAME = 'PT" + id.toString() + "'; ";
-  let DEL1 = "DELIMITER $$ ", DEL2 = "DELIMITER ;";
 
-  await DB.promise().query(DEL1 + T1 + T2 + "BEGIN " + T3 + "END $$ " + DEL2);
+  await DB.promise().query(T1 + T2 + "BEGIN " + T3 + "END");
 }
 
 function purify(str)
@@ -328,6 +340,8 @@ module.exports.INS = async function INS(TAB,COL)
 
   let DB = DBconnection();
 
+  let DB2 = DBsuper();
+
   let r = "";
     
   DB.connect( (error) =>
@@ -349,6 +363,30 @@ module.exports.INS = async function INS(TAB,COL)
 
   if(r.STATUS)
     return r;
+
+  if(TAB == "PLAYLISTS")
+  {
+    DB2.connect( (error) =>
+    {
+      if(error)
+      {
+        try
+        {
+          DB.end();
+          DB2.end();
+        }
+        catch
+        {}
+        
+        errorLog("sql",error,5); //sql-error5
+        
+        r = {}; r.STATUS = error;
+      }  
+    });
+
+    if(r.STATUS)
+      return r;
+  }
 
   console.log("INSERT");
 
@@ -380,7 +418,7 @@ module.exports.INS = async function INS(TAB,COL)
       }
     }
     
-    let r = JSON.parse(JSON.stringify(result));
+    r = JSON.parse(JSON.stringify(result));
 
     if(affectedRows > 0 && r[0])
       r[0].affectedRows = affectedRows;
@@ -414,7 +452,7 @@ module.exports.INS = async function INS(TAB,COL)
       {
         r[0].affectedRows = 1;
         
-        await createTrigger(X,DB);
+        await createTrigger(X,DB2);
       }
        
 
@@ -494,6 +532,9 @@ module.exports.INS = async function INS(TAB,COL)
   console.log(r);
 
   DB.end();
+
+  if(TAB == "PLAYLISTS")
+    DB2.end();
 
   return r;
 }
@@ -670,9 +711,9 @@ module.exports.DEL = async function DEL(TAB,WHERE)
   
   Q += ')';
 
-  var DB = DBconnection();
+  let DB = DBconnection();
   
-  var r = "";
+  let r = "";
   
   DB.connect( (error) =>
   {
@@ -705,11 +746,17 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     let result, fields, affectedRows = 0;
 
     if(prefix != "AT" && prefix != "PT" )
+    {
+      console.log("NON PTX OR ATX TABLE MANIPULATION");
+
       [result,fields] = await DB.promise().query(Q,params);
+    }
     else
     {
       if(WHERE[0] && WHERE.length > 0)
       {
+        console.log("PTX OR ATX TABLE MANIPULATION");
+        
         let ids = WHERE;
 
         console.log(ids);
@@ -724,7 +771,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
       }
     }
 
-    let r = JSON.parse(JSON.stringify(result));
+    r = JSON.parse(JSON.stringify(result));
 
     if(affectedRows > 0 && r[0])
     {
@@ -757,7 +804,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 
             await del(path + file);
 
-            console.log(file + " successfully deleted.")
+            console.log(file + " successfully deleted.");
 
           }
           catch(error)
@@ -772,9 +819,16 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     }
     else if(TAB == "ROOMS")
     {
-      r = [r[1]]
+      console.log("Attemting to get ROOM deletion operation result:");
 
-      r[0].affectedRows = Object.values(r[0][0])[0];
+      console.log(r);
+
+      let ar = r[0][0].CH;
+
+      r = [r[1]];
+
+      r[0].affectedRows = ar;
+
     } 
   }
   catch(error) //sql-error10

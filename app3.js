@@ -738,7 +738,8 @@ client.on("message", (topic, message) =>
                         info = true;
 
                         //dataStream_R = [];
-                        //dataStream_S = [];    
+                        //dataStream_S = [];
+    
                         
                         dataStream_R = [
                                             {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
@@ -1399,7 +1400,7 @@ client.on("message", (topic, message) =>
 
                             if(Q2[0] && !Q2.STATUS)
                             {
-                                TRACKS = Q2.length;
+                                TRACKS = Q2.length - 1;
 
                                 RANDOM = true;
 

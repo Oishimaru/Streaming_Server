@@ -1400,7 +1400,7 @@ client.on("message", (topic, message) =>
 
                             if(Q2[0] && !Q2.STATUS)
                             {
-                                TRACKS = Q2.length;
+                                TRACKS = Q2.length - 1;
 
                                 RANDOM = true;
 

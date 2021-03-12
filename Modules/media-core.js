@@ -192,7 +192,7 @@ module.exports.playlist = async (req,res) =>
       {
         let pl_tab = Q[0].PL_TABLE_NAME;
   
-        Q = await SQL.SEL("SONG_ID",pl_tab + " LIMIT 1," + track, "","",false);
+        Q = await SQL.SEL("SONG_ID",pl_tab + " ORDER BY ID LIMIT " + track + ",1", "","",false);
   
         if(!Q.STATUS && Q[0] && Q[0].SONG_ID)
         {
@@ -213,10 +213,9 @@ module.exports.playlist = async (req,res) =>
     {
       console.log("Random song playback");
 
-      if(track == '0')
-        track == '1';
+      track = (parseInt(track) + 1).toString();
       
-      let Q = await SQL.SEL("FL_NAME","MUSIC LIMIT 1," + track,"","",false);
+      let Q = await SQL.SEL("SONG_ID",pl_tab + " ORDER BY ID LIMIT " + track + ",1", "","",false);
 
       if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
       {
@@ -263,7 +262,9 @@ module.exports.playlist = async (req,res) =>
 
       try
       {
-        statFile = await fs.stat(file);
+        stat = util.promisify(fs.stat);
+
+        statFile = await stat(file);
 
         //Armo headers.
         res.writeHead(200, {'Content-Type': 'audio/mpeg','Content-Length': statFile.size});

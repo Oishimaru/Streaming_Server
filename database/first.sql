@@ -151,57 +151,10 @@ INSERT INTO TCP_PORTS (ID,PORT,PORT_STATUS)
 INSERT INTO MUSIC (SONG_NAME,ARTIST,FL_NAME)
     VALUES ('default','GOOGLE TRANSLATE','default.mp3');
 
-#-------------------------------------------------TRIGGERS-----------------------------------------------------------
+
+#------------------------------------------------PROCEDURES----------------------------------------------------------
 
 DELIMITER $$
-
-#-----------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER MUSIC_CASCADE
-
-AFTER DELETE ON MUSIC
-
-FOR EACH ROW
-
-BEGIN
-
-    SET @O = old.ID;
-
-    CREATE TEMPORARY TABLE IF NOT EXISTS PTX
-    (
-        ID INTEGER AUTO_INCREMENT,
-        PL_TABLE_NAME TEXT,
-
-        PRIMARY KEY (ID)
-    );
-
-    INSERT INTO PTX (PL_TABLE_NAME)
-        SELECT PL_TABLE_NAME FROM PLAYLISTS;
-    
-    SET @COUNTER = (SELECT COUNT(*) FROM PTX);
-
-    SET @n = LAST_INSERT_ID() + 1;
-
-    SET @i = @n - (@COUNTER - 1);
-
-    WHILE (@i < @n)
-    BEGIN
-
-        SET @TAB = (SELECT PL_TABLE_NAME FROM PTX WHERE ID = @i)
-
-        SET @i = @i + 1;
-
-        SET @Q = CONCAT('DELETE FROM ',@TAB,' WHERE SONG_ID = ?');
-
-        PREPARE STM FROM @Q;
-
-        EXECUTE STM USING @O;
-
-        DEALLOCATE PREPARE STM;
-
-    END
-
-END $$
-#------------------------------------------------PROCEDURES----------------------------------------------------------
 
 -- INSERT
 
@@ -260,12 +213,12 @@ BEGIN
     SET @AD_TAB = CONCAT("AT",@ID);
 
     UPDATE PLAYLISTS SET PL_TABLE_NAME = @PL_TAB, AD_TABLE_NAME = @AD_TAB WHERE ID = @ID;
-    
-    SET @FIELDS ='(ID INTEGER NOT NULL AUTO_INCREMENT,SONG_ID INTEGER NOT NULL,';
-    
-    SET @CONSTRAINTS1 = CONCAT('PRIMARY KEY (ID)');
 
-    SET @STM = CONCAT('CREATE TABLE ',@PL_TAB,@FIELDS,@CONSTRAINTS1,@CONSTRAINTS2);
+    SET @FIELDS =' (ID INTEGER NOT NULL AUTO_INCREMENT,SONG_ID INTEGER NOT NULL, ';
+    
+    SET @CONSTRAINTS1 = 'PRIMARY KEY (ID))';
+
+    SET @STM = CONCAT('CREATE TABLE ',@PL_TAB,@FIELDS,@CONSTRAINTS1);
     
     PREPARE STM FROM @STM;
 
@@ -273,9 +226,9 @@ BEGIN
 
     DEALLOCATE PREPARE STM;
 
-    SET @FIELDS2 ='(ID INTEGER NOT NULL AUTO_INCREMENT,AD_ID INTEGER NOT NULL,RATE INTEGER NOT NULL,PLAYBACK TEXT NOT NULL,';
+    SET @FIELDS2 =' (ID INTEGER NOT NULL AUTO_INCREMENT,AD_ID INTEGER NOT NULL,RATE INTEGER NOT NULL,PLAYBACK TEXT NOT NULL, ';
 
-    SET @CONSTRAINTS2 = CONCAT('PRIMARY KEY(ID)');
+    SET @CONSTRAINTS2 = 'PRIMARY KEY(ID))';
 
     SET @STM2 = CONCAT("CREATE TABLE ",@AD_TAB,@FIELDS2,@CONSTRAINTS2);
 
@@ -543,6 +496,35 @@ BEGIN
 
         DELETE FROM MUSIC WHERE ID = INID;
 
+        SET @ID = INID;
+
+        CREATE TEMPORARY TABLE PTX
+        (
+            ID INTEGER AUTO_INCREMENT,
+            PL_TABLE_NAME TEXT,
+
+            PRIMARY KEY (ID)
+        );
+
+        INSERT INTO PTX (PL_TABLE_NAME)
+            SELECT PL_TABLE_NAME FROM PLAYLISTS;
+
+        SET @n = (SELECT COUNT(*) FROM PTX);
+
+        SET @i = 1;
+
+        WHILE (@i <= @n) DO
+
+            SET @TAB = (SELECT PL_TABLE_NAME FROM PTX WHERE ID = @i);
+
+            SET @i = @i + 1;
+
+            CALL ss_PTX_DEL_BY_SONG(@TAB,@ID);
+
+        END WHILE;
+
+        DROP TABLE PTX;
+
         SELECT @SONG FL_NAME;
 
     ELSE
@@ -678,6 +660,22 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
+CREATE PROCEDURE ss_PTX_DEL_BY_SONG(IN TAB TEXT, IN O INTEGER)
+
+BEGIN
+
+        SET @Q = CONCAT('DELETE FROM ',TAB,' WHERE SONG_ID = ?');
+
+        PREPARE STM FROM @Q;
+        
+        SET @O = O;
+        
+        EXECUTE STM USING @O;
+
+        DEALLOCATE PREPARE STM;
+
+END $$
+#-----------------------------------------------------------------------------------------------------------------
 CREATE PROCEDURE ss_ATX_DEL(IN TAB VARCHAR(6),IN INID INT)
 
 BEGIN
@@ -739,7 +737,15 @@ DELIMITER ;
 
 CREATE USER IF NOT EXISTS 'orbittas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'P4s5w0rd++';
 
+CREATE USER IF NOT EXISTS 'super_orbittas'@'localhost' IDENTIFIED WITH mysql_native_password BY 'P4s5w0rd2++';
+
+GRANT ALL PRIVILEGES ON STREAMING_SERVER.* TO 'super_orbittas'@'localhost';
+
 GRANT ALL PRIVILEGES ON STREAMING_SERVER.* TO 'orbittas'@'localhost';
+
+FLUSH PRIVILEGES;
+
+UPDATE mysql.user SET Super_Priv='Y' WHERE user='super_orbittas' AND host='localhost';
 
 FLUSH PRIVILEGES;
 
