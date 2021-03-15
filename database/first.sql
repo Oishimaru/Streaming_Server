@@ -652,7 +652,9 @@ BEGIN
 
         DEALLOCATE PREPARE STM;
 
-        UPDATE PLAYLISTS SET TRACKS = TRACKS - @CHANGES, GNRES = @GNRES WHERE PL_TABLE_NAME = TAB;
+        SET @TRACKS = @C1 - @CHANGES;
+
+        UPDATE PLAYLISTS SET TRACKS = @TRACKS, GNRES = @GNRES WHERE PL_TABLE_NAME = TAB;
     
     END IF;
 
@@ -673,6 +675,24 @@ BEGIN
         EXECUTE STM USING @O;
 
         DEALLOCATE PREPARE STM;
+        
+        SET @GNRES = NULL;
+
+        SET @GROUP = 'SELECT GROUP_CONCAT(DISTINCT GNRE ORDER BY GNRE ASC)';
+        
+        SET @INTO = ' INTO @GNRES FROM MUSIC ';
+        
+        SET @IN = CONCAT('WHERE ID IN (SELECT SONG_ID FROM ',TAB,')');
+
+        SET @Q2 = CONCAT(@GROUP,@INTO,@IN);
+
+        PREPARE STM FROM @Q2;
+
+        EXECUTE STM;
+
+        DEALLOCATE PREPARE STM;
+
+        UPDATE PLAYLISTS SET TRACKS = TRACKS - 1, GNRES = @GNRES WHERE PL_TABLE_NAME = TAB;
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------

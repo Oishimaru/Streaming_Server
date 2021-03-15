@@ -452,7 +452,7 @@ module.exports.INS = async function INS(TAB,COL)
       {
         r[0].affectedRows = 1;
         
-        await createTrigger(X,DB2);
+        //await createTrigger(X,DB2);
       }
        
 
