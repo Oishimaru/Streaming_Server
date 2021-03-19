@@ -737,8 +737,8 @@ client.on("message", (topic, message) =>
                         
                         info = true;
 
-                        //dataStream_R = [];
-                        //dataStream_S = [];
+                        dataStream_R = [];
+                        dataStream_S = [];
     
                         
                         dataStream_R = [
@@ -1030,6 +1030,10 @@ client.on("message", (topic, message) =>
                             {
                                 CHANGES = Q[0].affectedRows;
                             }
+                            else
+                            {
+                                CHANGES = Q.affectedRows;
+                            }
 
                             Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
                             
@@ -1079,6 +1083,11 @@ client.on("message", (topic, message) =>
                             {
                                 CHANGES = Q[0].affectedRows;
                             }
+                            else
+                            {
+                                CHANGES = Q.affectedRows;
+                            }
+
 
                             Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
                                 
@@ -1127,6 +1136,10 @@ client.on("message", (topic, message) =>
                                 if(Q[0])
                                 {
                                     CHANGES = Q[0].affectedRows;
+                                }
+                                else
+                                {
+                                    CHANGES = Q.affectedRows;
                                 }
     
                                 Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};

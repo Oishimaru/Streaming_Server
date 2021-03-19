@@ -640,11 +640,14 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
       let oldfile = null;
       
-      if(r[0][0])
+      if(r[0] != null)
       {
-        oldfile = r[0][0].FL_NAME;
+        if(r[0][0] != null)
+        { 
+          oldfile = r[0][0].FL_NAME;
 
-        console.log(oldfile);
+          console.log(oldfile);
+        }
       }
         
 

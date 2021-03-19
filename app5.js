@@ -740,7 +740,7 @@ client.on("message", (topic, message) =>
                         dataStream_R = [];
                         dataStream_S = [];
     
-                        /*
+                        
                         dataStream_R = [
                                             {"NAME":"RD1","CHIP_ID":"B33P","TYPE":"READER"},
                                             {"NAME":"RD2","CHIP_ID":"M33P","TYPE":"READER"},
@@ -752,7 +752,7 @@ client.on("message", (topic, message) =>
                                             {"NAME":"SP2","CHIP_ID":"M00P","TYPE":"SPEAKER"},
                                             {"NAME":"SP3","CHIP_ID":"BL00P","TYPE":"SPEAKER"}
                                        ];
-                        */
+                        
 
                         client.publish(outgoing[0],JSON.stringify({"REQUEST":"INFO"}));
     
@@ -874,14 +874,16 @@ client.on("message", (topic, message) =>
                                         }
                                         else
                                         {                                        
-                                            let speaker = {CHIP_ID,NAME,TYPE:"SPEAKER",STATUS:"UNRESPONSIVE"};
+                                            let speaker = {NAME,CHIP_ID,TYPE:"SPEAKER",STATUS:"UNRESPONSIVE"};
 
                                             dataStream_S.push(speaker);
                                         }
                                     }
                                 }                    
                             }
-
+                            dataStream_R.push({"NAME":"RD4","CHIP_ID":"GL33P","TYPE":"READER","STATUS":"UNRESPONSIVE"});
+                            dataStream_S.push({"NAME":"SP4","CHIP_ID":"GL00P","TYPE":"SPEAKER","STATUS":"UNASSIGNED"});
+                            
                             let conc = dataStream_R.concat(dataStream_S);
                             
                             let ST;
@@ -1030,10 +1032,6 @@ client.on("message", (topic, message) =>
                             {
                                 CHANGES = Q[0].affectedRows;
                             }
-                            else
-                            {
-                                CHANGES = Q.affectedRows;
-                            }
 
                             Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
                             
@@ -1083,11 +1081,6 @@ client.on("message", (topic, message) =>
                             {
                                 CHANGES = Q[0].affectedRows;
                             }
-                            else
-                            {
-                                CHANGES = Q.affectedRows;
-                            }
-
 
                             Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
                                 
@@ -1136,10 +1129,6 @@ client.on("message", (topic, message) =>
                                 if(Q[0])
                                 {
                                     CHANGES = Q[0].affectedRows;
-                                }
-                                else
-                                {
-                                    CHANGES = Q.affectedRows;
                                 }
     
                                 Q = {"STATUS":"SUCCESS","MESSAGE":Q, CHANGES};
