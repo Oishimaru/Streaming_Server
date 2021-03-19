@@ -640,9 +640,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
       let oldfile = null;
       
-      if(r[0])
+      if(r[0][0])
       {
-        oldfile = Object.values(r[0][0])[0];
+        oldfile = r[0][0].FL_NAME;
 
         console.log(oldfile);
       }
@@ -652,7 +652,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       {
         let prev = oldfile;
 
-        let nw  = COL.FIELD3;
+        let nw  = COL.FIELD4;
 
         r = [r[1]];
 

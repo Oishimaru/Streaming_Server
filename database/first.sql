@@ -662,37 +662,51 @@ BEGIN
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
-CREATE PROCEDURE ss_PTX_DEL_BY_SONG(IN TAB TEXT, IN O INTEGER)
+CREATE PROCEDURE ss_PTX_DEL_BY_SONG(IN TAB TEXT, IN INID INTEGER)
 
 BEGIN
 
-        SET @Q = CONCAT('DELETE FROM ',TAB,' WHERE SONG_ID = ?');
+        SET @X = 0;
 
-        PREPARE STM FROM @Q;
-        
-        SET @O = O;
-        
-        EXECUTE STM USING @O;
+        SET @ID = INID;
 
-        DEALLOCATE PREPARE STM;
-        
-        SET @GNRES = NULL;
+        SET @Q1 = CONCAT('SELECT COUNT(*) INTO @X FROM ',TAB,' WHERE SONG_ID = ?');
 
-        SET @GROUP = 'SELECT GROUP_CONCAT(DISTINCT GNRE ORDER BY GNRE ASC)';
-        
-        SET @INTO = ' INTO @GNRES FROM MUSIC ';
-        
-        SET @IN = CONCAT('WHERE ID IN (SELECT SONG_ID FROM ',TAB,')');
+        PREPARE STM FROM @Q1;
 
-        SET @Q2 = CONCAT(@GROUP,@INTO,@IN);
-
-        PREPARE STM FROM @Q2;
-
-        EXECUTE STM;
+        EXECUTE STM USING @ID;
 
         DEALLOCATE PREPARE STM;
 
-        UPDATE PLAYLISTS SET TRACKS = TRACKS - 1, GNRES = @GNRES WHERE PL_TABLE_NAME = TAB;
+        IF (@X > 0) THEN
+
+            SET @Q2 = CONCAT('DELETE FROM ',TAB,' WHERE SONG_ID = ?');
+
+            PREPARE STM FROM @Q2;         
+            
+            EXECUTE STM USING @ID;
+
+            DEALLOCATE PREPARE STM;
+            
+            SET @GNRES = NULL;
+
+            SET @GROUP = 'SELECT GROUP_CONCAT(DISTINCT GNRE ORDER BY GNRE ASC)';
+            
+            SET @INTO = ' INTO @GNRES FROM MUSIC ';
+            
+            SET @IN = CONCAT('WHERE ID IN (SELECT SONG_ID FROM ',TAB,')');
+
+            SET @Q3 = CONCAT(@GROUP,@INTO,@IN);
+
+            PREPARE STM FROM @Q3;
+
+            EXECUTE STM;
+
+            DEALLOCATE PREPARE STM;
+
+            UPDATE PLAYLISTS SET TRACKS = TRACKS - 1, GNRES = @GNRES WHERE PL_TABLE_NAME = TAB;
+        
+        END IF;
 
 END $$
 #-----------------------------------------------------------------------------------------------------------------
