@@ -1398,7 +1398,7 @@ client.on("message", (topic, message) =>
                             if(TRACKS > 0)
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/music");
                             else
-                                PATH.push("/audio/0/No_Songs_In_Playlist.mp3");
+                                PATH.push("/audio/0/No_Song_In_Playlist.mp3");
 
                             if(AD_TRACKS > 0)
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
