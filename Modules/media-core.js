@@ -101,68 +101,32 @@ module.exports.listFiles = (req,res) =>
 //Traigo el contenido del archivo.
 module.exports.audioMedia = (req,res) => 
 {	
-	let file = null
-  
-  if(req.params.file)
-    file = req.params.file;
+	//Obtengo el nombre del archivo.
+	let file = req.params.file;
 
-	let reg = null;
+	let reg = parseInt(req.params.reg);
 
-  if(req.params.reg)
-    reg = parseInt(req.params.reg);
-
-  let code = null;
-
-  if(req.params.code)
-    code = req.params.code;
-
-	if ((file!='' && (reg == 0 || reg == 1)) || code)
+	//Si el nombre no es nulo.
+	if (file!='' && (reg == 0 || reg == 1))
 	{
-    if(!code)
-		  file = dir[reg]+file;
-    else
-    {
-      let def;
+		//Agrego el path local al file.
+		file = dir[reg]+file;
 
-      code = parseInt(code);
-
-      switch(code)
-      {
-        case 2:
-        {
-          def = "No_Songs.mp3";
-
-          break;
-        }
-
-        case 3:
-        {
-          def = "No_Playlist.mp3";
-
-          break;
-        }
-
-        default:
-        {
-          def = "default.mp3";
-
-          break;
-        }
-      }
-      
-      file = dir[0]+def;
-    }
-      
+		//Variable para el filesize.
 		let statFile;
 
+		//Intengo obtener el archivo.
 		try
 		{
+			//Traigo atributos del archivo.
 			statFile = fs.statSync(file);
 
+			//Armo headers.
 			res.writeHead(200, {'Content-Type': 'audio/mpeg','Content-Length': statFile.size});
 
 			console.log("Streaming " + file + ".");
 
+			//Devuelvo streams del archivo atravez de un pipe.
       let stream = fs.createReadStream(file).pipe(res);
       
       let hrstart = process.hrtime();

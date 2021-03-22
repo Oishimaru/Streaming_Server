@@ -185,11 +185,11 @@ async function createServer(i)
     termination[i] = false;
 
     app[i].get('/audio/:reg/:file/',core.audioMedia);
-    
-    app[i].get('/audio/default/:code/0',core.audioMedia);
+
+    app[i].get('/audio/:reg/:file/0/',core.audioMedia);
 
     app[i].get('/playlist/:id/:audio/:track/',core.playlist);
-
+    
     app[i].get('*',core.routeError); 
 }
 
@@ -1406,7 +1406,7 @@ client.on("message", (topic, message) =>
                             console.log(PATH);    
                         }
                         else
-                            PATH.push = "audio/default/3"; //No_Playlist.mp3 Playlist not Found.                 
+                            PATH.push = "/audio/default/No_Playlist.mp3"; //No_Playlist.mp3 Playlist not Found.                 
                     }
                     else
                     {
@@ -1423,10 +1423,10 @@ client.on("message", (topic, message) =>
                                 PATH.push("/playlist/random/music");
                             }
                             else
-                                PATH.push("audio/default/2"); //No songs have been added.     
+                                PATH.push("/audio/0/No_Songs.mp3"); //No songs have been added.     
                         }
                         else
-                            PATH.push("audio/default/1");
+                            PATH.push("/audio/0/default.mp3");
                     }
                   
                 }
