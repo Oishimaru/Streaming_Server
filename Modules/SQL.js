@@ -220,7 +220,13 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
     r = {}; r.STATUS = error;
   }
 
-  DB.end();
+  try
+  {
+    DB.end();
+  }
+  catch
+  {}
+  
 
   console.log(r);
 
@@ -531,10 +537,16 @@ module.exports.INS = async function INS(TAB,COL)
 
   console.log(r);
 
-  DB.end();
+  try
+  {
+    DB.end();
 
-  if(TAB == "PLAYLISTS")
-    DB2.end();
+    if(TAB == "PLAYLISTS")
+      DB2.end();
+  }
+  catch
+  {}
+  
 
   return r;
 }
@@ -685,7 +697,12 @@ module.exports.UPDT = async function UPDT(TAB,COL)
       r = {}; r.STATUS = error;
   }
 
-  DB.end();
+  try
+  {
+    DB.end();
+  }
+  catch
+  {}
 
   console.log(r);
 
@@ -841,7 +858,12 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     r = {}; r.STATUS = error;
   }
 
-  DB.end();
+  try
+  {
+    DB.end();
+  }
+  catch
+  {}
 
   console.log(r);
 

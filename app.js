@@ -1403,7 +1403,7 @@ client.on("message", (topic, message) =>
                             console.log(PATH);    
                         }
                         else
-                            PATH.push = "audio/0/default.mp3"; //defaul2.mp3 No Playlist Found.                 
+                            PATH.push = "audio/0/No_Playlist.mp3"; //No_Playlist.mp3 Playlist not Found.                 
                     }
                     else
                     {
@@ -1420,7 +1420,7 @@ client.on("message", (topic, message) =>
                                 PATH.push("/playlist/random/music");
                             }
                             else
-                                PATH.push("audio/0/default.mp3"); //defaul2.mp3 No Playlist Found.     
+                                PATH.push("audio/0/No_Songs.mp3"); //No songs have been added.     
                         }
                         else
                             PATH.push("audio/0/default.mp3");
