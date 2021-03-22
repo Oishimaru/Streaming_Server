@@ -186,6 +186,8 @@ async function createServer(i)
 
     app[i].get('/audio/:reg/:file/',core.audioMedia);
     
+    app[i].get('/audio/:reg/:file/0/',core.audioMedia);
+    
     app[i].get('/playlist/:id/:audio/:track/',core.playlist);
 
     app[i].get('*',core.routeError); 
@@ -1307,7 +1309,7 @@ client.on("message", (topic, message) =>
         {
             let HOST = "192.168.0.103";
 
-            let PORT, PATH = [], TRACKS = 0, AD_TRACKS = 0, LIST_ID = null, RANDOM = false;
+            let PORT, PATH = [], TRACKS = 1, AD_TRACKS = 0, LIST_ID = null, RANDOM = false;
 
             let READER_ID =  ID[1];
             
@@ -1380,6 +1382,7 @@ client.on("message", (topic, message) =>
                     OP = def;
 
                     console.log("default:" + OP);
+                    
                     if(OP > 0)
                     {
                         Q2 = await SQL.SEL("*","PLAYLISTS","ID",OP.toString(),false);
