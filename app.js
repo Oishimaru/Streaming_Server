@@ -1393,13 +1393,21 @@ client.on("message", (topic, message) =>
 
                             AD_TRACKS = Q2[0].TRACKS;
 
-                            console.log("TRACKS:" + TRACKS);
+                            
 
                             if(TRACKS > 0)
+                            {
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/music");
+                            }
                             else
-                                PATH.push("/audio/0/No_Song_In_Playlist.mp3");
+                            {
+                                TRACKS = 1;
 
+                                PATH.push("/audio/0/No_Song_In_Playlist.mp3");
+                            }
+                               
+                            console.log("TRACKS:" + TRACKS);
+                            
                             if(AD_TRACKS > 0)
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
 
