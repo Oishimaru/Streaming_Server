@@ -1397,6 +1397,8 @@ client.on("message", (topic, message) =>
 
                             if(TRACKS > 0)
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/music");
+                            else
+                                PATH.push("/audio/0/No_Songs_In_Playlist.mp3");
 
                             if(AD_TRACKS > 0)
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
@@ -1406,17 +1408,17 @@ client.on("message", (topic, message) =>
                             console.log(PATH);    
                         }
                         else
-                            PATH.push = "/audio/default/No_Playlist.mp3"; //No_Playlist.mp3 Playlist not Found.                 
+                            PATH.push = "/audio/0/No_Playlist.mp3"; //No_Playlist.mp3 Playlist not Found.                 
                     }
                     else
                     {
                         if(OP < 0)
                         {                         
-                            Q2 = await SQL.SEL("ID","MUSIC","","",false);
+                            Q2 = await SQL.SEL("ID","MUSIC WHERE ID > 1","","",false);
 
                             if(Q2[0] && !Q2.STATUS)
                             {
-                                TRACKS = Q2.length - 1;
+                                TRACKS = Q2.length;
 
                                 RANDOM = true;
 
