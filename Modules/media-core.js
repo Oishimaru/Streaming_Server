@@ -215,7 +215,7 @@ module.exports.playlist = async (req,res) =>
 
       track = (parseInt(track) + 1).toString();
       
-      let Q = await SQL.SEL("ID","MUSIC ORDER BY ID LIMIT " + track + ",1", "","",false);
+      let Q = await SQL.SEL("FL_NAME","MUSIC ORDER BY ID LIMIT " + track + ",1", "","",false);
 
       if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
       {
@@ -297,7 +297,7 @@ module.exports.playlist = async (req,res) =>
     }
     else
     {
-      let message = "Playlist " + id.toString() + " retrieval error @ track " +  track.toString();
+      let message = " retrieval error @ track " +  track.toString();
       
       process.stdout.write(message);
       
