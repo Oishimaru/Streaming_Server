@@ -499,10 +499,12 @@ async function setDefaultList(ID)
 
     let data = {ID};
 
-    let info = JSON.stringify(data);
+    console.log(data);
 
     try
     {
+        let info = JSON.stringify(data);
+
         await writeFile(filename,info);
 
         process.stdout.write("Default Song ID set: ");
@@ -515,7 +517,7 @@ async function setDefaultList(ID)
     }
     catch(error) //error31
     {
-        errorLoge("",error,31);
+        errorLog("",error,31);
 
         console.log('Unable to set new song ID.')
         
@@ -550,7 +552,7 @@ async function setCredentials(USER,PASS)
     }
     catch(error) //error3
     {
-        errorLoge("",error,3);
+        errorLog("",error,3);
 
         console.log('Unable to set new credentials.')
         
@@ -1198,10 +1200,7 @@ client.on("message", (topic, message) =>
                 setImmediate( async () =>
                 {
                     if(TOKEN && data.TOKEN == TOKEN)
-                    {
-                        if(data.ID != "random" || data.ID != "default")
-                            data.ID = parseInt(data.ID);
-                            
+                    {                            
                         output = await setDefaultList(data.ID);
 
                         client.publish(outgoing[4],JSON.stringify(output));

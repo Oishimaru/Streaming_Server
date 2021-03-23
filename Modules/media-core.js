@@ -215,7 +215,7 @@ module.exports.playlist = async (req,res) =>
 
       track = (parseInt(track) + 1).toString();
       
-      let Q = await SQL.SEL("SONG_ID",pl_tab + " ORDER BY ID LIMIT " + track + ",1", "","",false);
+      let Q = await SQL.SEL("ID","MUSIC ORDER BY ID LIMIT " + track + ",1", "","",false);
 
       if(!Q.STATUS && Q[0] && Q[0].FL_NAME)
       {
