@@ -1392,8 +1392,9 @@ client.on("message", (topic, message) =>
 
                             AD_TRACKS = Q2[0].TRACKS;
 
-                            
-
+                            if(isNaN(TRACKS))
+                                TRACKS = parseInt(TRACKS.toString());
+                        
                             if(TRACKS > 0)
                             {
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/music");
@@ -1405,7 +1406,7 @@ client.on("message", (topic, message) =>
                                 PATH.push("/audio/0/No_Song_In_Playlist.mp3");
                             }
                                
-                            console.log("TRACKS:" + TRACKS);
+                            console.log("NUMBER OF TRACKS:" + TRACKS);
                             
                             if(AD_TRACKS > 0)
                                 PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
