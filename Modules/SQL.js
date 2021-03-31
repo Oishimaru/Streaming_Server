@@ -20,27 +20,29 @@ const { playlist } = require('./media-core');
 
 function DBconnection()
 {
-  var con = mysql.createConnection({
+  var connection = mysql.createConnection({
   host: "localhost",
   user: "orbittas",
   password: "P4s5w0rd++",
   database: "STREAMING_SERVER"
   });
 
-  return con;
+  connection.on("error",(err) => {console.log(err);});
+  
+  return connection;
 }
 
-function DBsuper()
+/*function DBsuper()
 {
-  var con = mysql.createConnection({
+  var pool = mysql.createPool({
   host: "localhost",
   user: "super_orbittas",
   password: "P4s5w0rd2++",
   database: "STREAMING_SERVER"
   });
 
-  return con;
-}
+  return pool;
+}*/
 
 async function createTrigger(id,DB)
 {
@@ -178,9 +180,7 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
         DB.end();
       }
       catch
-      {
-
-      }
+      {}
       
       errorLog("sql",error,3);
 
@@ -346,7 +346,7 @@ module.exports.INS = async function INS(TAB,COL)
 
   let DB = DBconnection();
 
-  let DB2 = DBsuper();
+  //let DB2 = DBsuper();
 
   let r = "";
     
@@ -356,7 +356,7 @@ module.exports.INS = async function INS(TAB,COL)
     {
       try
       {
-        DB.end();
+        DB.end(() => { DB.destroy();});
       }
       catch
       {}
@@ -372,7 +372,7 @@ module.exports.INS = async function INS(TAB,COL)
 
   if(TAB == "PLAYLISTS")
   {
-    DB2.connect( (error) =>
+    /*DB2.connect( (error) =>
     {
       if(error)
       {
@@ -388,7 +388,7 @@ module.exports.INS = async function INS(TAB,COL)
         
         r = {}; r.STATUS = error;
       }  
-    });
+    });*/
 
     if(r.STATUS)
       return r;
@@ -539,10 +539,10 @@ module.exports.INS = async function INS(TAB,COL)
 
   try
   {
-    DB.end();
+    DB.end(() => { DB.destroy();});
 
-    if(TAB == "PLAYLISTS")
-      DB2.end();
+    //if(TAB == "PLAYLISTS")
+      //DB2.end();
   }
   catch
   {}
@@ -623,7 +623,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     {
       try
       {
-        DB.end();
+        DB.end(() => { DB.destroy();});
       }
       catch
       {}
@@ -699,7 +699,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
   try
   {
-    DB.end();
+    DB.end(() => { DB.destroy();});
   }
   catch
   {}
@@ -741,7 +741,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     {
       try
       {
-        DB.end();
+        DB.end(() => { DB.destroy();});
       }
       catch
       {}
@@ -860,7 +860,7 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 
   try
   {
-    DB.end();
+    DB.end(() => { DB.destroy();});
   }
   catch
   {}

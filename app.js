@@ -1352,10 +1352,17 @@ client.on("message", (topic, message) =>
 
                 if(LIST_ID)
                 {
-                    console.log("TRACKS:" + TRACKS);
 
-                    if(TRACKS > 0)
+                    if(TRACKS && TRACKS > 0)
                         PATH.push("/playlist/" + LIST_ID.toString() + "/music");
+                    else
+                    {
+                        TRACKS = 1;
+
+                        PATH.push("/audio/0/No_Song_In_Playlist.mp3");
+                    }
+                        
+                    console.log("NUMBER OF TRACKS:" + TRACKS);
 
                     if(AD_TRACKS > 0)
                         PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
