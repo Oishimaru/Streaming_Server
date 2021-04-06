@@ -311,7 +311,7 @@ module.exports.INS = async function INS(TAB,COL)
     {
       c = (TAB == "PLAYLISTS" && keys[i] == "FIELD6");
 
-      if(keys[i] != "TARGET" && keys[i] != "TOKEN" && !c)
+      if(keys[i] != "TARGET" && keys[i] != "TOKEN" && keys[i] != "AP_ID" && !c)
       { 
         if(isNaN(COL[keys[i]]))
           COL[keys[i]] = purify(COL[keys[i]]);
@@ -574,7 +574,7 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     }
     for(let i = 0; i < keys.length; i++)
     {
-      if(keys[i] != "TARGET" && keys[i] != "TOKEN")
+      if(keys[i] != "TARGET" && keys[i] != "TOKEN" && keys[i] != "AP_ID")
       { 
         if(isNaN(COL[keys[i]]))
         {

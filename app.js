@@ -682,6 +682,8 @@ client.on("message", (topic, message) =>
     let log;
 
     let data;
+
+    let APP;
     
     try
     {
@@ -692,6 +694,8 @@ client.on("message", (topic, message) =>
         errorLog("",error,8);
     }
     
+    if(data.AP_ID)
+        APP = data.AP_ID;
     
     if(ID[1] == "INFO")
     {
@@ -731,6 +735,8 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
+                let tinfo = "SERVER/" + APP + "/INFO";
+
                 if(!block)
                 {
                     block = true;
@@ -897,9 +903,9 @@ client.on("message", (topic, message) =>
                             else
                                 ST = "\"STATUS\":\"EMPTY\"";
                                 
-                            let response = "{\"DEVICES\":" + JSON.stringify(conc) + "," + ST + "}";
+                            let resp = "{\"DEVICES\":" + JSON.stringify(conc) + "," + ST + "}";
                    
-                            client.publish(outgoing[1],response);
+                            client.publish(tinfo,resp);
                         
                             block = false;
 
@@ -918,6 +924,10 @@ client.on("message", (topic, message) =>
     }
     else if(ID[0] == "APP")
     {
+        let response = "SERVER/" + APP + "/RESPONSE";
+
+        let auth = "SERVER/" + APP + "/AUTHORIZE";
+
         switch(ID[1])
         {
             case "GET":
@@ -1006,12 +1016,12 @@ client.on("message", (topic, message) =>
                                 Q = "{\"" + data.TARGET + "\":[]," +  ST + "}";
                         }
 
-                        client.publish(outgoing[4],Q);
+                        client.publish(response,Q);
                     }
                     else if(!TOKEN)
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                        client.publish(response,JSON.stringify({"STATUS":"LOGIN"}));
                     else
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                        client.publish(response,JSON.stringify({"STATUS":"INVALID"}));
                 });
                 
                 break;
@@ -1051,7 +1061,7 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
-                        console.log("RESPONSE TOPIC: " + outgoing[4]);
+                        console.log("RESPONSE TOPIC: " + response);
 
                         process.stdout.write("MESSAGE: ");
 
@@ -1059,12 +1069,12 @@ client.on("message", (topic, message) =>
                         
                         Q = JSON.stringify(Q);
     
-                        client.publish(outgoing[4],Q);
+                        client.publish(response,Q);
                     }
                     else if(!TOKEN)
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                        client.publish(response,JSON.stringify({"STATUS":"LOGIN"}));
                     else
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                        client.publish(response,JSON.stringify({"STATUS":"INVALID"}));
 
                 });
                 
@@ -1099,7 +1109,7 @@ client.on("message", (topic, message) =>
                         else
                             Q = {"STATUS":"FAILURE","MESSAGE":Q.STATUS};
                         
-                        console.log("RESPONSE TOPIC: " + outgoing[4]);
+                        console.log("RESPONSE TOPIC: " + response);
 
                         process.stdout.write("MESSAGE: ");
 
@@ -1107,12 +1117,12 @@ client.on("message", (topic, message) =>
                         
                         Q = JSON.stringify(Q);
                         
-                        client.publish(outgoing[4],Q);
+                        client.publish(response,Q);
                     }
                     else if(!TOKEN)
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                        client.publish(response,JSON.stringify({"STATUS":"LOGIN"}));
                     else
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                        client.publish(response,JSON.stringify({"STATUS":"INVALID"}));
                 });
                 
                 break;
@@ -1158,7 +1168,7 @@ client.on("message", (topic, message) =>
                                 def =  -1;
                             }
                             
-                            console.log("RESPONSE TOPIC: " + outgoing[4]);
+                            console.log("RESPONSE TOPIC: " + response);
 
                             process.stdout.write("MESSAGE: ");
 
@@ -1166,13 +1176,13 @@ client.on("message", (topic, message) =>
 
                             Q = JSON.stringify(Q);
 
-                            client.publish(outgoing[4],Q);    
+                            client.publish(response,Q);    
                         }
                         else
                         {
                             Q = {"STATUS":"UNDELETABLE","MESSAGE":"Attempted to delete " + data.TARGET + "of id " + id};
 
-                            console.log("RESPONSE TOPIC: " + outgoing[4]);
+                            console.log("RESPONSE TOPIC: " + response);
 
                             process.stdout.write("MESSAGE: ");
 
@@ -1180,14 +1190,14 @@ client.on("message", (topic, message) =>
 
                             Q = JSON.stringify(Q);
 
-                            client.publish(outgoing[4],Q);  
+                            client.publish(response,Q);  
                         }
                         
                     }
                     else if(!TOKEN)
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                        client.publish(response,JSON.stringify({"STATUS":"LOGIN"}));
                     else
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                        client.publish(response,JSON.stringify({"STATUS":"INVALID"}));
                 });
                 
                 break;
@@ -1203,12 +1213,12 @@ client.on("message", (topic, message) =>
                     {                            
                         output = await setDefaultList(data.ID);
 
-                        client.publish(outgoing[4],JSON.stringify(output));
+                        client.publish(response,JSON.stringify(output));
                     }
                     else if(!TOKEN)
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                        client.publish(response,JSON.stringify({"STATUS":"LOGIN"}));
                     else
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                        client.publish(response,JSON.stringify({"STATUS":"INVALID"}));
                     
                 });
 
@@ -1224,9 +1234,9 @@ client.on("message", (topic, message) =>
                         disk.checkStorage('./files/music/','/',outgoing[1],client);
                     }
                     else if(!TOKEN)
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"LOGIN"}));
+                        client.publish(response,JSON.stringify({"STATUS":"LOGIN"}));
                     else
-                        client.publish(outgoing[4],JSON.stringify({"STATUS":"INVALID"}));
+                        client.publish(response,JSON.stringify({"STATUS":"INVALID"}));
                 });
 
                 break;
@@ -1244,55 +1254,56 @@ client.on("message", (topic, message) =>
                     {
                         if(credentials.USER == data.USER && credentials.PASS == data.PASS)
                         {
-                            TOKEN = randomToken(16);
+                            if(!TOKEN)
+                                TOKEN = randomToken(16);
 
-                            var response = {"STATUS":"SUCCESS",TOKEN};
+                            var resp= {"STATUS":"SUCCESS",TOKEN};
 
-                            response = JSON.stringify(response);
+                            resp = JSON.stringify(resp);
 
-                            console.log(response);
+                            console.log(resp);
 
-                            client.publish(outgoing[3],response);
+                            client.publish(auth,resp);
                         }
                         else
                         {
-                            var response = {"STATUS":"INVALID"};
+                            var resp = {"STATUS":"INVALID"};
 
-                            response = JSON.stringify(response);
+                            resp = JSON.stringify(resp);
 
-                            console.log(response);
+                            console.log(resp);
 
-                            client.publish(outgoing[3],response);
+                            client.publish(auth,resp);
                         }
                     }
                     else if(data.NEW == "YES")
                     {
                         if(TOKEN && data.TOKEN == TOKEN)
                         {
-                            let response = await setCredentials(data.USER,data.PASS);                            
+                            let resp = await setCredentials(data.USER,data.PASS);                            
                             
-                            if(response.STATUS == "SUCCESS")
+                            if(resp.STATUS == "SUCCESS")
                             {
                                 TOKEN = randomToken(16);
 
-                                response.TOKEN = TOKEN;
+                                resp.TOKEN = TOKEN;
                             }
 
-                            response = JSON.stringify(response);
+                            resp = JSON.stringify(resp);
 
-                            console.log(response);
+                            console.log(resp);
 
-                            client.publish(outgoing[3],response);
+                            client.publish(auth,resp);
                         }
                         else
                         {
-                            var response = {"STATUS":"LOGIN"};
+                            var resp = {"STATUS":"LOGIN"};
 
-                            console.log(response);
+                            console.log(resp);
 
-                            response = JSON.stringify(response);
+                            response = JSON.stringify(resp);
 
-                            client.publish(outgoing[3],response);
+                            client.publish(auth,resp);
                         }
                     }   
                 });
@@ -1398,13 +1409,10 @@ client.on("message", (topic, message) =>
                             TRACKS = Q2[0].TRACKS;
 
                             AD_TRACKS = Q2[0].TRACKS;
-
-                            if(isNaN(TRACKS))
-                                TRACKS = parseInt(TRACKS.toString());
                         
                             if(TRACKS > 0)
                             {
-                                PATH.push("/playlist/" + LIST_ID.toString() + "/music");
+                                PATH.push("/playlist/" + OP.toString() + "/music");
                             }
                             else
                             {
@@ -1416,7 +1424,7 @@ client.on("message", (topic, message) =>
                             console.log("NUMBER OF TRACKS:" + TRACKS);
                             
                             if(AD_TRACKS > 0)
-                                PATH.push("/playlist/" + LIST_ID.toString() + "/ads");
+                                PATH.push("/playlist/" + OP.toString() + "/ads");
 
                             process.stdout.write("PATH:");
 
