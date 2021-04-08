@@ -735,7 +735,7 @@ client.on("message", (topic, message) =>
 
             case "APP":
             {
-                let tinfo = "SERVER/" + APP + "/INFO";
+                let tinfo = "SERVER/" + APP + "/RESPONSE";
 
                 if(!block)
                 {

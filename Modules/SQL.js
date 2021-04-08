@@ -177,7 +177,9 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
     {
       try
       {
-        DB.end();
+        //DB.end();
+
+        DB.destroy();
       }
       catch
       {}
@@ -222,7 +224,9 @@ module.exports.SEL = async function SEL(S,TAB,PARAM,WHERE,STR)
 
   try
   {
-    DB.end();
+    //DB.end();
+
+    DB.destroy();
   }
   catch
   {}
@@ -356,7 +360,9 @@ module.exports.INS = async function INS(TAB,COL)
     {
       try
       {
-        DB.end(() => { DB.destroy();});
+        //DB.end(() => { DB.destroy();});
+
+        DB.destroy();
       }
       catch
       {}
@@ -539,7 +545,9 @@ module.exports.INS = async function INS(TAB,COL)
 
   try
   {
-    DB.end(() => { DB.destroy();});
+    //DB.end(() => { DB.destroy();});
+
+    DB.destroy();
 
     //if(TAB == "PLAYLISTS")
       //DB2.end();
@@ -623,7 +631,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
     {
       try
       {
-        DB.end(() => { DB.destroy();});
+        //DB.end(() => { DB.destroy();});
+        
+        DB.destroy();
       }
       catch
       {}
@@ -699,7 +709,9 @@ module.exports.UPDT = async function UPDT(TAB,COL)
 
   try
   {
-    DB.end(() => { DB.destroy();});
+    //DB.end(() => { DB.destroy();});
+
+    DB.destroy();
   }
   catch
   {}
@@ -741,7 +753,9 @@ module.exports.DEL = async function DEL(TAB,WHERE)
     {
       try
       {
-        DB.end(() => { DB.destroy();});
+        //DB.end(() => { DB.destroy();});
+
+        DB.destroy();
       }
       catch
       {}
@@ -860,7 +874,9 @@ module.exports.DEL = async function DEL(TAB,WHERE)
 
   try
   {
-    DB.end(() => { DB.destroy();});
+   // DB.end(() => { DB.destroy();});
+
+   DB.destroy();
   }
   catch
   {}
